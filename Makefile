@@ -1,6 +1,4 @@
-#---------------------------------------------------------------------------------
 .SUFFIXES:
-#---------------------------------------------------------------------------------
 
 ifeq ($(strip $(DEVKITPRO)),)
 $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>/devkitpro")
@@ -9,27 +7,6 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/libnx/switch_rules
 
-#---------------------------------------------------------------------------------
-# TARGET is the name of the output
-# BUILD is the directory where object files & intermediate files will be placed
-# SOURCES is a list of directories containing source code
-# DATA is a list of directories containing data files
-# INCLUDES is a list of directories containing header files
-# EXEFS_SRC is the optional input directory containing data copied into exefs, if anything this normally should only contain "main.npdm".
-# ROMFS is the directory containing data to be added to RomFS, relative to the Makefile (Optional)
-#
-# NO_ICON: if set to anything, do not use icon.
-# NO_NACP: if set to anything, no .nacp file is generated.
-# APP_TITLE is the name of the app stored in the .nacp file (Optional)
-# APP_AUTHOR is the author of the app stored in the .nacp file (Optional)
-# APP_VERSION is the version of the app stored in the .nacp file (Optional)
-# APP_TITLEID is the titleID of the app stored in the .nacp file (Optional)
-# ICON is the filename of the icon (.jpg), relative to the project folder.
-#   If not set, it attempts to use one of the following (in this order):
-#     - <Project name>.jpg
-#     - icon.jpg
-#     - <libnx folder>/default_icon.jpg
-#---------------------------------------------------------------------------------
 VERSION_MAJOR := 1
 VERSION_MINOR := 0
 VERSION_MICRO := 0
@@ -45,11 +22,9 @@ SOURCES		:=	src
 DATA		:=	data
 INCLUDES	:=	include
 EXEFS_SRC	:=	exefs_src
-#ROMFS	:=	romfs
+#ROMFS		:=	romfs
+ICON		:=  res/icon.jpg
 
-#---------------------------------------------------------------------------------
-# options for code generation
-#---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 
 CFLAGS	:=	-g -Wall -O3 -ffunction-sections \
@@ -67,19 +42,9 @@ LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-no-as-needed,-M
 
 LIBS	:= -lnx
 
-#---------------------------------------------------------------------------------
-# list of directories containing libraries, this must be the top level containing
-# include and lib
-#---------------------------------------------------------------------------------
 LIBDIRS	:= $(PORTLIBS) $(LIBNX)
 
-
-#---------------------------------------------------------------------------------
-# no real need to edit anything past this point unless you need to add additional
-# rules for different file extensions
-#---------------------------------------------------------------------------------
 ifneq ($(BUILD),$(notdir $(CURDIR)))
-#---------------------------------------------------------------------------------
 
 export OUTPUT	:=	$(CURDIR)/$(OUTDIR)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
@@ -174,11 +139,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all	:	$(OUTPUT).pfs0 $(OUTPUT).nro
-
-$(OUTPUT).pfs0	:	$(OUTPUT).nso
-
-$(OUTPUT).nso	:	$(OUTPUT).elf
+all	:	$(OUTPUT).nro
 
 ifeq ($(strip $(NO_NACP)),)
 $(OUTPUT).nro	:	$(OUTPUT).elf $(OUTPUT).nacp

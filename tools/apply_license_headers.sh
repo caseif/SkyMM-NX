@@ -6,7 +6,7 @@ AUTHOR="Max Roncace"
 EMAIL="mproncace@gmail.com"
 
 # read the header template
-header=$(cat HEADER.txt)
+header=$(cat ./res/HEADER.txt)
 
 # apply replacements
 header=$(sed -r "s/\\$\{project\}/$PROJECT/" <<< "$header")
