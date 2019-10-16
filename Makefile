@@ -20,7 +20,7 @@ OUTDIR		:=	out
 BUILD		:=	build
 SOURCES		:=	src
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=	include inipp
 EXEFS_SRC	:=	exefs_src
 #ROMFS		:=	romfs
 ICON		:=  res/icon.jpg
@@ -35,7 +35,7 @@ CFLAGS	:=	-g -Wall -O3 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=c++17
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-no-as-needed,-Map,$(notdir $*.map)

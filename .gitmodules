@@ -1,0 +1,3 @@
+[submodule "inipp"]
+	path = inipp
+	url = https://github.com/mcmtroffaes/inipp
