@@ -1,0 +1,26 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "cartridge.h": "c",
+        "stdint.h": "c",
+        "type_traits": "c",
+        "cpu.h": "c",
+        "cpu_tester.h": "c",
+        "instrs.h": "c",
+        "stddef.h": "c",
+        "string.h": "c",
+        "util.h": "c",
+        "standard_controller.h": "c",
+        "input_device.h": "c",
+        "renderer.h": "c",
+        "system.h": "c",
+        "sdl_audio.h": "c",
+        "hotkeys.h": "c",
+        "mappers.h": "c",
+        "nrom.h": "c",
+        "plutonium": "cpp",
+        "random": "cpp",
+        "vector": "cpp",
+        "map": "cpp"
+    }
+}
