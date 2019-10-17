@@ -101,20 +101,20 @@ struct SkyrimMod {
     bool has_esp;
     bool esp_enabled;
     std::vector<std::string> bsa_suffixes;
-    std::map<std::string, int> enabled_bsps;
+    std::map<std::string, int> enabled_bsas;
 
     SkyrimMod(const std::string &base_name):
             base_name(base_name),
             has_esp(false),
             esp_enabled(false),
             bsa_suffixes(),
-            enabled_bsps() {
+            enabled_bsas() {
     }
 };
 
 static const std::vector<std::string> g_archive_types_1 = {"", "Animations", "Meshes", "Sounds"};
 static const std::vector<std::string> g_archive_types_2 = {"Textures", "Voices"};
-static const std::vector<std::string> g_archive_types_3 = {"Animations"};
+static const std::vector<std::string> g_archive_types_3 = {"Animaini_tions"};
 
 static std::map<std::string, std::shared_ptr<SkyrimMod>> g_mod_list;
 static inipp::Ini<char> g_skyrim_ini;
@@ -179,7 +179,9 @@ ModFile parseModFileName(std::string file_name) {
             suffix = base.substr(dash_index + 3);
             base = base.substr(0, dash_index);
         }
-    } else if (ext != EXT_ESP) {
+    } else if (ext == EXT_ESP) {
+        suffix = "";
+    } else {
         return {ModFileType::UNKNOWN};
     }
 
@@ -242,6 +244,7 @@ template <typename CharT>
 int readIniFile(std::string &path, inipp::Ini<CharT> &ini) {
     std::ifstream ini_stream = std::ifstream(path, std::ios::in);
     if (!ini_stream.good()) {
+        FATAL("Failed to read file at %s", path.c_str());
         return -1;
     }
 
@@ -258,12 +261,12 @@ int readIniFile(const char *path, inipp::Ini<CharT> &ini) {
 
 template <typename CharT>
 int processIniDefs(inipp::Ini<CharT> &ini, const char *key, const std::vector<std::string> &expected_suffixes) {
-    auto archive_sec_it = g_skyrim_ini.sections.find(INI_SECTION_ARCHIVE);
-    if (archive_sec_it == g_skyrim_ini.sections.cend()) {
+    auto archive_sec_it = ini.sections.find(INI_SECTION_ARCHIVE);
+    if (archive_sec_it == ini.sections.cend()) {
         return 0;
     }
 
-    decltype(g_skyrim_ini)::Section sec = archive_sec_it->second;
+    auto sec = archive_sec_it->second;
     auto archive_list_it = sec.find(std::string(key));
     if (archive_list_it == sec.cend()) {
         return 0;
@@ -284,8 +287,9 @@ int processIniDefs(inipp::Ini<CharT> &ini, const char *key, const std::vector<st
 
         bool good_suffix = false;
         for (std::string expected_suffix : expected_suffixes) {
-            if (mod_file.suffix == expected_suffix) {
+            if (mod_file.suffix.find_last_of(expected_suffix, expected_suffix.size())) {
                 good_suffix = true;
+                break;
             }
         }
         if (!good_suffix) {
@@ -299,7 +303,7 @@ int processIniDefs(inipp::Ini<CharT> &ini, const char *key, const std::vector<st
 
         std::shared_ptr<SkyrimMod> mod = mod_it->second;
 
-        mod->enabled_bsps[mod_file.suffix] += 1;
+        mod->enabled_bsas[mod_file.suffix] += 1;
     }
 
     return 0;
@@ -332,28 +336,69 @@ int parseInis() {
     return 0;
 }
 
+int processPluginsFile() {
+    std::ifstream plugins_stream = std::ifstream(SKYRIM_PLUGINS_FILE, std::ios::in);
+    if (!plugins_stream.good()) {
+        FATAL("Failed to read Plugins file");
+        return -1;
+    }
+
+    std::string line;
+    while (std::getline(plugins_stream, line)) {
+        if (line.length() == 0 || line.at(0) != '*') {
+            continue;
+        }
+
+        ModFile file_def = parseModFileName(line.substr(1));
+        if (file_def.type != ModFileType::ESP) {
+            continue;
+        }
+
+        auto mod_it = g_mod_list.find(file_def.base_name);
+        if (mod_it == g_mod_list.cend()) {
+            continue;
+        }
+
+        std::shared_ptr<SkyrimMod> mod = mod_it->second;
+        mod->esp_enabled = true;
+        printf("found %s\n", mod->base_name.c_str());
+    }
+
+    return 0;
+}
+
 ModStatus getModStatus(SkyrimMod const &mod) {
     bool esp_status = mod.has_esp ? mod.esp_enabled : true;
     
     ModStatus bsa_status;
-    if (mod.bsa_suffixes.size() > 0 && mod.enabled_bsps.size() == 0) {
+    if (mod.bsa_suffixes.size() > 0 && mod.enabled_bsas.size() == 0) {
+        printf("0 < %d\n", mod.bsa_suffixes.size());
         bsa_status = ModStatus::DISABLED;
-    } else if (mod.bsa_suffixes.size() != mod.enabled_bsps.size()) {
+    } else if (mod.bsa_suffixes.size() != mod.enabled_bsas.size()) {
+        printf("%d < %d\n", mod.enabled_bsas.size(), mod.bsa_suffixes.size());
         bsa_status = ModStatus::PARTIAL;
     } else {
-        auto anim_it = mod.enabled_bsps.find("Animations");
-        if (anim_it != mod.enabled_bsps.cend()) {
+        auto anim_it = mod.enabled_bsas.find("Animations");
+        if (anim_it != mod.enabled_bsas.cend()) {
+            if (anim_it->second != 2) {
+                printf("missing animation def\n");
+            }
             // check if Animations BSA is present in both sResourceArchiveList and sResourceToLoadInMemoryList
             bsa_status = anim_it->second == 2 ? ModStatus::ENABLED : ModStatus::PARTIAL;
+        } else {
+            bsa_status = ModStatus::ENABLED;
         }
     }
 
     switch (bsa_status) {
         case ModStatus::PARTIAL:
+            printf("BSA partial\n");
             return ModStatus::PARTIAL;
         case ModStatus::DISABLED:
+            printf("BSA disabled\n");
             return esp_status ? ModStatus::PARTIAL : ModStatus::DISABLED;
         case ModStatus::ENABLED:
+            printf("BSA enabled\n");
             return esp_status ? ModStatus::ENABLED : ModStatus::PARTIAL;
         default:
             PANIC();
@@ -373,6 +418,14 @@ int initialize(void) {
         return rc;
     }
 
+    if (RC_FAILURE(rc = parseInis())) {
+        return rc;
+    }
+
+    if (RC_FAILURE(rc = processPluginsFile())) {
+        return rc;
+    }
+
     printf("Identified %lu mods\n", g_mod_list.size());
 
     CONSOLE_MOVE_DOWN(3);
@@ -383,16 +436,17 @@ int initialize(void) {
         switch (status) {
             case ModStatus::ENABLED:
                 status_str = "Enabled";
+                break;
             case ModStatus::DISABLED:
                 status_str = "Disabled";
+                break;
             case ModStatus::PARTIAL:
                 status_str = "Partial";
+                break;
+            default:
+                PANIC();
         }
         printf("  - %s (%s)\n", it->second->base_name.c_str(), status_str);
-    }
-
-    if ((rc = parseInis()) != 0) {
-        return rc;
     }
 
     return 0;
@@ -410,6 +464,11 @@ int main(int argc, char **argv) {
 
         if (kDown & KEY_PLUS) {
             break;
+        }
+
+        if (!init_status) {
+            consoleUpdate(NULL);
+            continue;
         }
 
         consoleUpdate(NULL);
