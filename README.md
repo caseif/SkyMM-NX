@@ -18,7 +18,7 @@ Currently, the program requires that all mods follow a standard naming scheme:
 
 ### Building
 
-SkyMM-NX depends on `devkitA64` and `libnx` to compile. These packages are installable through
+SkyMM-NX depends on `devkitA64`, `libnx`, and `switch-tools` to compile. These packages are installable through
 [devkitPro pacman](https://devkitpro.org/wiki/devkitPro_pacman).
 
 Once all dependencies have been satisfied, simply run `make` in the project directory.
