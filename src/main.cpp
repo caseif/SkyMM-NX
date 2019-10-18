@@ -171,6 +171,9 @@ ModFile parseModFileName(std::string file_name) {
     std::string ext = file_name.substr(dot_index + 1);
     std::string suffix;
 
+    base = trim(base);
+    ext = trim(ext);
+
     if (ext == EXT_BSA) {
         size_t dash_index = base.rfind(" - ");
         if (dash_index == std::string::npos) {
@@ -361,7 +364,6 @@ int processPluginsFile() {
 
         std::shared_ptr<SkyrimMod> mod = mod_it->second;
         mod->esp_enabled = true;
-        printf("found %s\n", mod->base_name.c_str());
     }
 
     return 0;
@@ -372,17 +374,12 @@ ModStatus getModStatus(SkyrimMod const &mod) {
     
     ModStatus bsa_status;
     if (mod.bsa_suffixes.size() > 0 && mod.enabled_bsas.size() == 0) {
-        printf("0 < %d\n", mod.bsa_suffixes.size());
         bsa_status = ModStatus::DISABLED;
     } else if (mod.bsa_suffixes.size() != mod.enabled_bsas.size()) {
-        printf("%d < %d\n", mod.enabled_bsas.size(), mod.bsa_suffixes.size());
         bsa_status = ModStatus::PARTIAL;
     } else {
         auto anim_it = mod.enabled_bsas.find("Animations");
         if (anim_it != mod.enabled_bsas.cend()) {
-            if (anim_it->second != 2) {
-                printf("missing animation def\n");
-            }
             // check if Animations BSA is present in both sResourceArchiveList and sResourceToLoadInMemoryList
             bsa_status = anim_it->second == 2 ? ModStatus::ENABLED : ModStatus::PARTIAL;
         } else {
@@ -392,13 +389,10 @@ ModStatus getModStatus(SkyrimMod const &mod) {
 
     switch (bsa_status) {
         case ModStatus::PARTIAL:
-            printf("BSA partial\n");
             return ModStatus::PARTIAL;
         case ModStatus::DISABLED:
-            printf("BSA disabled\n");
-            return esp_status ? ModStatus::PARTIAL : ModStatus::DISABLED;
+            return (esp_status && mod.has_esp) ? ModStatus::PARTIAL : ModStatus::DISABLED;
         case ModStatus::ENABLED:
-            printf("BSA enabled\n");
             return esp_status ? ModStatus::ENABLED : ModStatus::PARTIAL;
         default:
             PANIC();
@@ -445,6 +439,7 @@ int initialize(void) {
                 break;
             default:
                 PANIC();
+                return -1;
         }
         printf("  - %s (%s)\n", it->second->base_name.c_str(), status_str);
     }
