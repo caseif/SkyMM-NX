@@ -1,5 +1,7 @@
 #pragma once
 
+#include "console_helper.hpp"
+
 #define FATAL(fmt, ...) CONSOLE_CLEAR_SCREEN(); \
                         CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_RED); \
                         printf("Fatal error: " ); \
