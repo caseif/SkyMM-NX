@@ -31,6 +31,10 @@
 #define MAX(a, b) ((a > b) ? a : b)
 #define CLAMP(n, l, h) (MIN(MAX(n, l), h))
 
+size_t ModGui::getSelectedIndex(void) {
+    return selected_row;
+}
+
 std::shared_ptr<SkyrimMod> ModGui::getSelectedMod(void) {
     return *(mod_list.cbegin() + selected_row);
 }

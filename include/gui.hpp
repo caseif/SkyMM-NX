@@ -33,7 +33,7 @@
 
 class ModGui {
     private:
-        std::vector<std::shared_ptr<SkyrimMod>> &mod_list;
+        ModList &mod_list;
         size_t screen_off_y;
         size_t display_rows;
         size_t selected_row;
@@ -64,7 +64,7 @@ class ModGui {
         }
 
     public:
-        ModGui(std::vector<std::shared_ptr<SkyrimMod>> &mod_list, size_t screen_off_y, size_t display_rows):
+        ModGui(ModList &mod_list, size_t screen_off_y, size_t display_rows):
                 mod_list(mod_list),
                 screen_off_y(screen_off_y),
                 display_rows(display_rows),
@@ -73,6 +73,8 @@ class ModGui {
         }
 
         std::shared_ptr<SkyrimMod> getSelectedMod(void);
+
+        size_t getSelectedIndex(void);
 
         void scrollSelection(int delta);
 

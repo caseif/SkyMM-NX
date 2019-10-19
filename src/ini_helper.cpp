@@ -100,7 +100,8 @@ int readIniFile(const char *path, StdIni &ini) {
     return readIniFile(path_str, ini);
 }
 
-int processIniDefs(StdIni &ini, const char *key, const std::vector<std::string> &expected_suffixes) {
+int processIniDefs(ModList &final_mod_list, ModList &temp_mod_list, StdIni &ini, const char *key,
+        const std::vector<std::string> &expected_suffixes) {
     auto archive_sec_it = ini.sections.find(INI_SECTION_ARCHIVE);
     if (archive_sec_it == ini.sections.cend()) {
         return 0;
@@ -136,9 +137,14 @@ int processIniDefs(StdIni &ini, const char *key, const std::vector<std::string> 
             continue;
         }
 
-        std::shared_ptr<SkyrimMod> mod = find_mod(mod_file.base_name);
+        std::shared_ptr<SkyrimMod> mod = find_mod(final_mod_list, mod_file.base_name);
         if (!mod) {
-            continue;
+            mod = find_mod(temp_mod_list, mod_file.base_name);
+            if (mod) {
+                final_mod_list.insert(final_mod_list.end(), mod);
+            } else {
+                continue;
+            }
         }
 
         mod->enabled_bsas[mod_file.suffix] += 1;
@@ -147,7 +153,7 @@ int processIniDefs(StdIni &ini, const char *key, const std::vector<std::string> 
     return 0;
 }
 
-int parseInis(void) {
+int parseInis(ModList &final_mod_list, ModList &temp_mod_list) {
     int rc;
 
     u64 lang_code;
@@ -167,9 +173,9 @@ int parseInis(void) {
     DO_OR_DIE(rc, readIniFile(SKYRIM_INI_FILE, g_skyrim_ini), "Failed to read Skyrim.ini");
     DO_OR_DIE(rc, readIniFile(ini_lang_file, g_skyrim_lang_ini), "Failed to read Skyrim_%s.ini", skyrim_lang_code);
 
-    processIniDefs(g_skyrim_ini, INI_ARCHIVE_LIST_1, g_archive_types_1);
-    processIniDefs(g_skyrim_ini, INI_ARCHIVE_LIST_3, g_archive_types_3);
-    processIniDefs(g_skyrim_lang_ini, INI_ARCHIVE_LIST_2, g_archive_types_2);
+    processIniDefs(final_mod_list, temp_mod_list, g_skyrim_ini, INI_ARCHIVE_LIST_1, g_archive_types_1);
+    processIniDefs(final_mod_list, temp_mod_list, g_skyrim_ini, INI_ARCHIVE_LIST_3, g_archive_types_3);
+    processIniDefs(final_mod_list, temp_mod_list, g_skyrim_lang_ini, INI_ARCHIVE_LIST_2, g_archive_types_2);
 
     return 0;
 }

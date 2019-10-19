@@ -58,8 +58,13 @@
 
 static HidControllerKeys g_key_edit_lo = KEY_Y;
 
+static bool g_dirty = false;
+static bool g_dirty_warned = false;
+
 static std::string g_status_msg = "";
 static bool g_tmp_status = false;
+
+static ModList g_mod_list_tmp;
 
 int discoverMods() {
     DIR *dir = opendir(SKYRIM_DATA_DIR);
@@ -91,10 +96,11 @@ int discoverMods() {
             continue;
         } 
 
-        std::shared_ptr<SkyrimMod> mod = find_mod(mod_file.base_name);
+        std::shared_ptr<SkyrimMod> mod = find_mod(g_mod_list_tmp, mod_file.base_name);
         if (!mod) {
             mod = std::shared_ptr<SkyrimMod>(new SkyrimMod(mod_file.base_name));
-            get_global_mod_list().insert(get_global_mod_list().end(), mod);
+            // everything gets loaded into a temp buffer so we can rebuild it with the proper order later
+            g_mod_list_tmp.insert(g_mod_list_tmp.end(), mod);
         }
 
         if (mod_file.type == ModFileType::ESP) {
@@ -129,9 +135,14 @@ int processPluginsFile() {
             continue;
         }
 
-        std::shared_ptr<SkyrimMod> mod = find_mod(file_def.base_name);
+        std::shared_ptr<SkyrimMod> mod = find_mod(getGlobalModList(), file_def.base_name);
         if (!mod) {
-            continue;
+            mod = find_mod(g_mod_list_tmp, file_def.base_name);
+            if (mod) {
+                getGlobalModList().insert(getGlobalModList().end(), mod);
+            } else {
+                continue;
+            }
         }
 
         mod->esp_enabled = true;
@@ -152,19 +163,26 @@ int initialize(void) {
         return rc;
     }
 
-    if (RC_FAILURE(rc = parseInis())) {
-        return rc;
-    }
-
     if (RC_FAILURE(rc = processPluginsFile())) {
         return rc;
     }
 
-    printf("Identified %lu mods\n", get_global_mod_list().size());
+    if (RC_FAILURE(rc = parseInis(getGlobalModList(), g_mod_list_tmp))) {
+        return rc;
+    }
+
+    for (std::shared_ptr<SkyrimMod> mod : g_mod_list_tmp) {
+        std::string mod_name = mod->base_name;
+        if (!find_mod(getGlobalModList(), mod_name)) {
+            getGlobalModList().insert(getGlobalModList().end(), mod);
+        }
+    }
+
+    printf("Identified %lu mods\n", getGlobalModList().size());
 
     CONSOLE_MOVE_DOWN(3);
     printf("Mod listing:\n\n");
-    for (auto it = get_global_mod_list().cbegin(); it != get_global_mod_list().cend(); it++) {
+    for (auto it = getGlobalModList().cbegin(); it != getGlobalModList().cend(); it++) {
         ModStatus status = (*it)->getStatus();
         const char *status_str;
         switch (status) {
@@ -230,7 +248,9 @@ static void redrawFooter() {
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
 }
 
-static void tryClearStatus(void) {
+static void clearTempEffects(void) {
+    g_dirty_warned = false;
+
     if (g_tmp_status) {
         g_status_msg = "";
         g_tmp_status = false;
@@ -241,7 +261,7 @@ static void tryClearStatus(void) {
 int main(int argc, char **argv) {
     consoleInit(NULL);
 
-    ModGui gui = ModGui(get_global_mod_list(), HEADER_HEIGHT, CONSOLE_LINES - HEADER_HEIGHT - FOOTER_HEIGHT);
+    ModGui gui = ModGui(getGlobalModList(), HEADER_HEIGHT, CONSOLE_LINES - HEADER_HEIGHT - FOOTER_HEIGHT);
 
     int init_status = initialize();
     if (RC_SUCCESS(init_status)) {
@@ -261,7 +281,14 @@ int main(int argc, char **argv) {
         u64 kUp = hidKeysUp(CONTROLLER_P1_AUTO);
 
         if (kDown & KEY_PLUS) {
-            break;
+            if (g_dirty && !g_dirty_warned) {
+                g_status_msg = "Press (+) to exit without saving changes";
+                g_tmp_status = true;
+                g_dirty_warned = true;
+                redrawFooter();
+            } else {
+                break;
+            }
         }
 
         if (RC_FAILURE(init_status)) {
@@ -283,20 +310,26 @@ int main(int argc, char **argv) {
 
         if (kDown & KEY_DOWN) {
             if (edit_load_order) {
-                gui.getSelectedMod()->loadLater();
+                if (gui.getSelectedIndex() < getGlobalModList().size() - 1) {
+                    gui.getSelectedMod()->loadLater();
+                    g_dirty = true;
+                }
             }
 
             gui.scrollSelection(1);
 
-            tryClearStatus();
+            clearTempEffects();
         } else if (kDown & KEY_UP) {
             if (edit_load_order) {
-                gui.getSelectedMod()->loadSooner();
+                if (gui.getSelectedIndex() > 0) {
+                    gui.getSelectedMod()->loadSooner();
+                    g_dirty = true;
+                }
             }
 
             gui.scrollSelection(-1);
 
-            tryClearStatus();
+            clearTempEffects();
         } else if (kDown & KEY_A) {
             std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
             switch (mod->getStatus()) {
@@ -310,14 +343,16 @@ int main(int argc, char **argv) {
                 default:
                     PANIC();
             }
+            g_dirty = true;
 
             gui.redrawCurrentRow();
 
-            tryClearStatus();
+            clearTempEffects();
         }
 
         if (kDown & KEY_MINUS) {
             //TODO: save changes
+            g_dirty = false;
 
             g_status_msg = "Wrote changes to SDMC!";
             g_tmp_status = true;

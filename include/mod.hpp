@@ -79,6 +79,8 @@ struct SkyrimMod {
     void loadLater(void);
 };
 
-std::vector<std::shared_ptr<SkyrimMod>> &get_global_mod_list(void);
+typedef std::vector<std::shared_ptr<SkyrimMod>> ModList;
 
-std::shared_ptr<SkyrimMod> find_mod(std::string &name);
+ModList &getGlobalModList(void);
+
+std::shared_ptr<SkyrimMod> find_mod(ModList &mod_list, std::string &name);
