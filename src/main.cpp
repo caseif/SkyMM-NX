@@ -340,7 +340,7 @@ int main(int argc, char **argv) {
 
     int init_status = initialize();
     if (RC_SUCCESS(init_status)) {
-        gui = new ModGui(g_mod_list, 0, 12);
+        gui = new ModGui(g_mod_list, 0, 50);
         CONSOLE_CLEAR_SCREEN();
         gui->redraw();
     }
@@ -357,6 +357,14 @@ int main(int argc, char **argv) {
         if (RC_FAILURE(init_status)) {
             consoleUpdate(NULL);
             continue;
+        }
+
+        if (kDown & KEY_DOWN) {
+            gui->scrollSelection(1);
+        } else if (kDown & KEY_UP) {
+            gui->scrollSelection(-1);
+        } else if (kDown & KEY_A) {
+            //TODO: toggle mod
         }
 
         consoleUpdate(NULL);
