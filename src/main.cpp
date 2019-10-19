@@ -51,8 +51,10 @@
 #define __VERSION "Unknown"
 #endif
 
-#define HEADER_HEIGHT 2
-#define FOOTER_HEIGHT 4
+#define HEADER_HEIGHT 3
+#define FOOTER_HEIGHT 5
+
+#define HRULE "--------------------------------"
 
 static HidControllerKeys g_key_edit_lo = KEY_Y;
 
@@ -188,11 +190,18 @@ static void redrawHeader(void) {
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
     printf("SkyMM-NX v" STRINGIZE(__VERSION) " by caseif");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+
+    CONSOLE_MOVE_DOWN(2);
+    CONSOLE_MOVE_LEFT(255);
+    printf(HRULE);
 }
 
 static void redrawFooter(bool edit_lo) {
-    CONSOLE_SET_POS(40, 0);
+    CONSOLE_SET_POS(39, 0);
     CONSOLE_CLEAR_LINE();
+    printf(HRULE);
+    CONSOLE_MOVE_LEFT(255);
+    CONSOLE_MOVE_DOWN(1);
 
     CONSOLE_MOVE_DOWN(1);
     CONSOLE_CLEAR_LINE();
