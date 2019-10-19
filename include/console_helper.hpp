@@ -29,6 +29,8 @@
 
 #include <switch.h>
 
+#define CONSOLE_LINES 44
+
 #define _PRINT_ESC(s) printf(CONSOLE_ESC(s))
 #define _EXPAND(a) a
 

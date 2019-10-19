@@ -45,6 +45,16 @@
 #include <cstdio>
 #include <dirent.h>
 
+#define STRINGIZE0(x) #x
+#define STRINGIZE(x) STRINGIZE0(x)
+
+#ifndef __VERSION
+#define __VERSION "Unknown"
+#endif
+
+#define HEADER_HEIGHT 2
+#define FOOTER_HEIGHT 4
+
 static std::map<std::string, std::shared_ptr<SkyrimMod>> g_mod_map;
 
 std::shared_ptr<SkyrimMod> find_mod(std::string name) {
@@ -193,8 +203,14 @@ int main(int argc, char **argv) {
 
     int init_status = initialize();
     if (RC_SUCCESS(init_status)) {
-        gui = new ModGui(get_global_mod_list(), 0, 50);
+        gui = new ModGui(get_global_mod_list(), HEADER_HEIGHT, CONSOLE_LINES - HEADER_HEIGHT - FOOTER_HEIGHT);
         CONSOLE_CLEAR_SCREEN();
+
+        CONSOLE_SET_POS(0, 0);
+        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
+        printf("SkyMM-NX v" STRINGIZE(__VERSION) " by caseif");
+        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+
         gui->redraw();
     }
 
