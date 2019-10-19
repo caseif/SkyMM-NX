@@ -24,6 +24,9 @@
  */
 
 #include "console_helper.hpp"
+#include "error_defs.hpp"
+#include "gui.hpp"
+#include "mod.hpp"
 #include "string_helper.hpp"
 
 #include "inipp/inipp.h"
@@ -40,9 +43,6 @@
 #include <cstdio>
 #include <dirent.h>
 
-#define EXT_ESP "esp"
-#define EXT_BSA "bsa"
-
 #define SKYRIM_ROMFS_DIR "sdmc:/atmosphere/titles/01000A10041EA000/romfs"
 #define SKYRIM_DATA_DIR SKYRIM_ROMFS_DIR "/Data"
 #define SKYRIM_INI_FILE SKYRIM_ROMFS_DIR "/Skyrim.ini"
@@ -56,67 +56,12 @@
 
 #define LANG_CODE_MAX_LEN 6
 
-#define FATAL(fmt, ...) CONSOLE_CLEAR_SCREEN(); \
-                        CONSOLE_SET_COLOR(CONSOLE_COLOR_RED); \
-                        printf("Fatal error: " ); \
-                        CONSOLE_SET_COLOR(CONSOLE_COLOR_YELLOW); \
-                        printf(fmt, ##__VA_ARGS__); \
-                        CONSOLE_MOVE_DOWN(3); \
-                        CONSOLE_MOVE_LEFT(99); \
-                        CONSOLE_SET_COLOR(CONSOLE_COLOR_GREEN); \
-                        printf("Press (+) to exit.\n")
-
-#define FATAL_CODE(code, fmt, ...) FATAL(fmt " (code %d)", ##__VA_ARGS__, code)
-
-#define PANIC() FATAL("Panic @ %s:%d\n\nPlease contact the developer", __FILE__, __LINE__)
-
-#define RC_SUCCESS(rc) (rc == 0)
-#define RC_FAILURE(rc) (rc != 0)
-
-#define DO_OR_DIE(rc, task, fail_fmt, ...)  if ((rc = RC_FAILURE((task)))) { \
-                                                FATAL_CODE(rc, fail_fmt, ##__VA_ARGS__); \
-                                                return -1; \
-                                            }
-
-enum class ModStatus {
-    ENABLED,
-    DISABLED,
-    PARTIAL
-};
-
-enum class ModFileType {
-    BSA,
-    ESP,
-    UNKNOWN
-};
-
-struct ModFile {
-    ModFileType type;
-    std::string base_name;
-    std::string suffix;
-};
-
-struct SkyrimMod {
-    const std::string base_name;
-    bool has_esp;
-    bool esp_enabled;
-    std::vector<std::string> bsa_suffixes;
-    std::map<std::string, int> enabled_bsas;
-
-    SkyrimMod(const std::string &base_name):
-            base_name(base_name),
-            has_esp(false),
-            esp_enabled(false),
-            bsa_suffixes(),
-            enabled_bsas() {
-    }
-};
-
 static const std::vector<std::string> g_archive_types_1 = {"", "Animations", "Meshes", "Sounds"};
 static const std::vector<std::string> g_archive_types_2 = {"Textures", "Voices"};
 static const std::vector<std::string> g_archive_types_3 = {"Animaini_tions"};
 
-static std::map<std::string, std::shared_ptr<SkyrimMod>> g_mod_list;
+static std::vector<std::shared_ptr<SkyrimMod>> g_mod_list;
+static std::map<std::string, std::shared_ptr<SkyrimMod>> g_mod_map;
 static inipp::Ini<char> g_skyrim_ini;
 static inipp::Ini<char> g_skyrim_lang_ini;
 
@@ -161,36 +106,6 @@ inline const char *get_language_code(SetLanguage &lang) {
     }
 }
 
-ModFile parseModFileName(std::string file_name) {
-    size_t dot_index = file_name.find_last_of('.');
-    if (dot_index == std::string::npos) {
-        return {ModFileType::UNKNOWN};
-    }
-
-    std::string base = file_name.substr(0, dot_index);
-    std::string ext = file_name.substr(dot_index + 1);
-    std::string suffix;
-
-    base = trim(base);
-    ext = trim(ext);
-
-    if (ext == EXT_BSA) {
-        size_t dash_index = base.rfind(" - ");
-        if (dash_index == std::string::npos) {
-            suffix = "";
-        } else {
-            suffix = base.substr(dash_index + 3);
-            base = base.substr(0, dash_index);
-        }
-    } else if (ext == EXT_ESP) {
-        suffix = "";
-    } else {
-        return {ModFileType::UNKNOWN};
-    }
-
-    return {ext == EXT_BSA ? ModFileType::BSA : ModFileType::ESP, base, suffix};
-}
-
 int discoverMods() {
     DIR *dir = opendir(SKYRIM_DATA_DIR);
 
@@ -215,19 +130,20 @@ int discoverMods() {
     printf("Found %lu mod files\n", files.size());
 
     for (std::string file_name : files) {
-        ModFile mod_file = parseModFileName(file_name);
+        ModFile mod_file = ModFile::fromFileName(file_name);
 
         if (mod_file.type == ModFileType::UNKNOWN) {
             continue;
         } 
 
         std::shared_ptr<SkyrimMod> mod;
-        auto mod_it = g_mod_list.find(mod_file.base_name);
-        if (mod_it != g_mod_list.cend()) {
+        auto mod_it = g_mod_map.find(mod_file.base_name);
+        if (mod_it != g_mod_map.cend()) {
             mod = mod_it->second;
         } else {
             mod = std::shared_ptr<SkyrimMod>(new SkyrimMod(mod_file.base_name));
-            g_mod_list.insert(g_mod_list.end(), std::pair(mod_file.base_name, mod));
+            g_mod_list.insert(g_mod_list.end(), mod);
+            g_mod_map.insert(g_mod_map.end(), std::pair(mod_file.base_name, mod));
         }
 
         if (mod_file.type == ModFileType::ESP) {
@@ -279,7 +195,7 @@ int processIniDefs(inipp::Ini<CharT> &ini, const char *key, const std::vector<st
     std::vector<std::string> archive_list = split(archive_list_str, ",");
     
     for (std::string archive_file : archive_list) {
-        ModFile mod_file = parseModFileName(archive_file);
+        ModFile mod_file = ModFile::fromFileName(archive_file);
         if (mod_file.type != ModFileType::BSA) {
             continue;
         }
@@ -299,8 +215,8 @@ int processIniDefs(inipp::Ini<CharT> &ini, const char *key, const std::vector<st
             continue;
         }
 
-        auto mod_it = g_mod_list.find(mod_file.base_name);
-        if (mod_it == g_mod_list.cend()) {
+        auto mod_it = g_mod_map.find(mod_file.base_name);
+        if (mod_it == g_mod_map.cend()) {
             continue;
         }
 
@@ -352,13 +268,14 @@ int processPluginsFile() {
             continue;
         }
 
-        ModFile file_def = parseModFileName(line.substr(1));
+        std::string file_name = line.substr(1);
+        ModFile file_def = ModFile::fromFileName(file_name);
         if (file_def.type != ModFileType::ESP) {
             continue;
         }
 
-        auto mod_it = g_mod_list.find(file_def.base_name);
-        if (mod_it == g_mod_list.cend()) {
+        auto mod_it = g_mod_map.find(file_def.base_name);
+        if (mod_it == g_mod_map.cend()) {
             continue;
         }
 
@@ -367,37 +284,6 @@ int processPluginsFile() {
     }
 
     return 0;
-}
-
-ModStatus getModStatus(SkyrimMod const &mod) {
-    bool esp_status = mod.has_esp ? mod.esp_enabled : true;
-    
-    ModStatus bsa_status;
-    if (mod.bsa_suffixes.size() > 0 && mod.enabled_bsas.size() == 0) {
-        bsa_status = ModStatus::DISABLED;
-    } else if (mod.bsa_suffixes.size() != mod.enabled_bsas.size()) {
-        bsa_status = ModStatus::PARTIAL;
-    } else {
-        auto anim_it = mod.enabled_bsas.find("Animations");
-        if (anim_it != mod.enabled_bsas.cend()) {
-            // check if Animations BSA is present in both sResourceArchiveList and sResourceToLoadInMemoryList
-            bsa_status = anim_it->second == 2 ? ModStatus::ENABLED : ModStatus::PARTIAL;
-        } else {
-            bsa_status = ModStatus::ENABLED;
-        }
-    }
-
-    switch (bsa_status) {
-        case ModStatus::PARTIAL:
-            return ModStatus::PARTIAL;
-        case ModStatus::DISABLED:
-            return (esp_status && mod.has_esp) ? ModStatus::PARTIAL : ModStatus::DISABLED;
-        case ModStatus::ENABLED:
-            return esp_status ? ModStatus::ENABLED : ModStatus::PARTIAL;
-        default:
-            PANIC();
-            return ModStatus::DISABLED;
-    }
 }
 
 int initialize(void) {
@@ -425,7 +311,7 @@ int initialize(void) {
     CONSOLE_MOVE_DOWN(3);
     printf("Mod listing:\n\n");
     for (auto it = g_mod_list.cbegin(); it != g_mod_list.cend(); it++) {
-        ModStatus status = getModStatus(*(it->second.get()));
+        ModStatus status = (it->get())->getStatus();
         const char *status_str;
         switch (status) {
             case ModStatus::ENABLED:
@@ -441,7 +327,7 @@ int initialize(void) {
                 PANIC();
                 return -1;
         }
-        printf("  - %s (%s)\n", it->second->base_name.c_str(), status_str);
+        printf("  - %s (%s)\n", it->get()->base_name.c_str(), status_str);
     }
 
     return 0;
@@ -450,7 +336,14 @@ int initialize(void) {
 int main(int argc, char **argv) {
     consoleInit(NULL);
 
+    ModGui *gui;
+
     int init_status = initialize();
+    if (RC_SUCCESS(init_status)) {
+        gui = new ModGui(g_mod_list, 0, 12);
+        CONSOLE_CLEAR_SCREEN();
+        gui->redraw();
+    }
 
     while (appletMainLoop()) {
         hidScanInput();
@@ -461,7 +354,7 @@ int main(int argc, char **argv) {
             break;
         }
 
-        if (!init_status) {
+        if (RC_FAILURE(init_status)) {
             consoleUpdate(NULL);
             continue;
         }
