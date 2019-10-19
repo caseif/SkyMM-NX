@@ -25,7 +25,6 @@
 
 #include "error_defs.hpp"
 #include "ini_helper.hpp"
-#include "main.hpp"
 #include "mod.hpp"
 #include "path_defs.hpp"
 #include "string_helper.hpp"

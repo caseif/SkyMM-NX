@@ -26,6 +26,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -69,3 +70,7 @@ struct SkyrimMod {
 
     ModStatus getStatus(void);
 };
+
+std::vector<std::shared_ptr<SkyrimMod>> &get_global_mod_list(void);
+
+std::shared_ptr<SkyrimMod> find_mod(std::string &name);

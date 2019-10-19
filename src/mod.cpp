@@ -28,7 +28,10 @@
 #include "mod.hpp"
 #include "string_helper.hpp"
 
+#include <memory>
 #include <string>
+
+static std::vector<std::shared_ptr<SkyrimMod>> g_mod_list;
 
 ModFile ModFile::fromFileName(std::string &file_name) {
     size_t dot_index = file_name.find_last_of('.');
@@ -89,4 +92,19 @@ ModStatus SkyrimMod::getStatus(void) {
             PANIC();
             return ModStatus::DISABLED;
     }
+}
+
+std::vector<std::shared_ptr<SkyrimMod>> &get_global_mod_list(void) {
+    return g_mod_list;
+}
+
+std::shared_ptr<SkyrimMod> find_mod(std::string &name) {
+    std::shared_ptr<SkyrimMod> mod;
+    for (std::shared_ptr<SkyrimMod> entry : get_global_mod_list()) {
+        if (entry->base_name == name) {
+            mod = entry;
+            break;
+        }
+    }
+    return mod;
 }

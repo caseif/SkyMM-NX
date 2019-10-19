@@ -27,7 +27,6 @@
 #include "error_defs.hpp"
 #include "gui.hpp"
 #include "ini_helper.hpp"
-#include "main.hpp"
 #include "mod.hpp"
 #include "path_defs.hpp"
 #include "string_helper.hpp"
@@ -54,19 +53,6 @@
 
 #define HEADER_HEIGHT 2
 #define FOOTER_HEIGHT 4
-
-static std::map<std::string, std::shared_ptr<SkyrimMod>> g_mod_map;
-
-std::shared_ptr<SkyrimMod> find_mod(std::string name) {
-    std::shared_ptr<SkyrimMod> mod;
-    for (std::shared_ptr<SkyrimMod> entry : get_global_mod_list()) {
-        if (entry->base_name == name) {
-            mod = entry;
-            break;
-        }
-    }
-    return mod;
-}
 
 int discoverMods() {
     DIR *dir = opendir(SKYRIM_DATA_DIR);
@@ -102,7 +88,6 @@ int discoverMods() {
         if (!mod) {
             mod = std::shared_ptr<SkyrimMod>(new SkyrimMod(mod_file.base_name));
             get_global_mod_list().insert(get_global_mod_list().end(), mod);
-            g_mod_map.insert(g_mod_map.end(), std::pair(mod_file.base_name, mod));
         }
 
         if (mod_file.type == ModFileType::ESP) {
@@ -137,12 +122,11 @@ int processPluginsFile() {
             continue;
         }
 
-        auto mod_it = g_mod_map.find(file_def.base_name);
-        if (mod_it == g_mod_map.cend()) {
+        std::shared_ptr<SkyrimMod> mod = find_mod(file_def.base_name);
+        if (!mod) {
             continue;
         }
 
-        std::shared_ptr<SkyrimMod> mod = mod_it->second;
         mod->esp_enabled = true;
     }
 
