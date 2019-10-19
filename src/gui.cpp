@@ -131,3 +131,7 @@ void ModGui::redrawRow(size_t gui_y) {
     CONSOLE_SET_COLOR(CONSOLE_COLOR_BG_BLACK);
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
 }
+
+void ModGui::redrawCurrentRow(void) {
+    redrawRow(listToGuiSpace(selected_row));
+}

@@ -79,4 +79,6 @@ class ModGui {
         void redraw(void);
 
         void redrawRow(size_t row);
+
+        void redrawCurrentRow(void);
 };

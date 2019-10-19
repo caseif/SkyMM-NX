@@ -58,6 +58,9 @@
 
 static HidControllerKeys g_key_edit_lo = KEY_Y;
 
+static std::string g_status_msg = "";
+static bool g_tmp_status = false;
+
 int discoverMods() {
     DIR *dir = opendir(SKYRIM_DATA_DIR);
 
@@ -196,7 +199,7 @@ static void redrawHeader(void) {
     printf(HRULE);
 }
 
-static void redrawFooter(bool edit_lo) {
+static void redrawFooter() {
     CONSOLE_SET_POS(39, 0);
     CONSOLE_CLEAR_LINE();
     printf(HRULE);
@@ -205,10 +208,10 @@ static void redrawFooter(bool edit_lo) {
 
     CONSOLE_MOVE_DOWN(1);
     CONSOLE_CLEAR_LINE();
-    if (edit_lo) {
+    if (!g_status_msg.empty()) {
         CONSOLE_SET_ATTRS(CONSOLE_ATTR_NONE);
         CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_YELLOW);
-        printf("(Editing load order)");
+        printf(g_status_msg.c_str());
         CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
         CONSOLE_SET_ATTRS(CONSOLE_ATTR_BOLD);
     }
@@ -220,9 +223,19 @@ static void redrawFooter(bool edit_lo) {
     CONSOLE_MOVE_DOWN(1);
     CONSOLE_CLEAR_LINE();
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_GREEN);
-    printf("(Up/Down) Navigate  |  (Y) (hold) Change load order  |  (+) Exit");
-    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+    printf("(Up/Down) Navigate  |  (A) Toggle Mod  |  (Y) (hold) Change Load Order");
     CONSOLE_MOVE_LEFT(255);
+    CONSOLE_MOVE_DOWN(1);
+    printf("(-) Save Changes    |  (+) Exit");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+}
+
+static void tryClearStatus(void) {
+    if (g_tmp_status) {
+        g_status_msg = "";
+        g_tmp_status = false;
+        redrawFooter();
+    }
 }
 
 int main(int argc, char **argv) {
@@ -236,7 +249,7 @@ int main(int argc, char **argv) {
 
         redrawHeader();
         gui.redraw();
-        redrawFooter(false);
+        redrawFooter();
     }
 
     bool edit_load_order = false;
@@ -258,12 +271,14 @@ int main(int argc, char **argv) {
 
         if (kDown & g_key_edit_lo) {
             edit_load_order = true;
-            redrawFooter(true);
+            g_status_msg = "Editing load order";
+            redrawFooter();
         }
         
         if (kUp & g_key_edit_lo) {
             edit_load_order = false;
-            redrawFooter(false);
+            g_status_msg = "";
+            redrawFooter();
         }
 
         if (kDown & KEY_DOWN) {
@@ -272,14 +287,41 @@ int main(int argc, char **argv) {
             }
 
             gui.scrollSelection(1);
+
+            tryClearStatus();
         } else if (kDown & KEY_UP) {
             if (edit_load_order) {
                 gui.getSelectedMod()->loadSooner();
             }
 
             gui.scrollSelection(-1);
+
+            tryClearStatus();
         } else if (kDown & KEY_A) {
-            //TODO: toggle mod
+            std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
+            switch (mod->getStatus()) {
+                case ModStatus::ENABLED:
+                    mod->disable();
+                    break;
+                case ModStatus::PARTIAL:
+                case ModStatus::DISABLED:
+                    mod->enable();
+                    break;
+                default:
+                    PANIC();
+            }
+
+            gui.redrawCurrentRow();
+
+            tryClearStatus();
+        }
+
+        if (kDown & KEY_MINUS) {
+            //TODO: save changes
+
+            g_status_msg = "Wrote changes to SDMC!";
+            g_tmp_status = true;
+            redrawFooter();
         }
 
         consoleUpdate(NULL);

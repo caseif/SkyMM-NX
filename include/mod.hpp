@@ -70,6 +70,10 @@ struct SkyrimMod {
 
     ModStatus getStatus(void);
 
+    void enable(void);
+
+    void disable(void);
+
     void loadSooner(void);
 
     void loadLater(void);

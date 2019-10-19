@@ -65,19 +65,24 @@ ModFile ModFile::fromFileName(std::string &file_name) {
 }
 
 ModStatus SkyrimMod::getStatus(void) {
-    bool esp_status = this->has_esp ? this->esp_enabled : true;
+    bool esp_status = has_esp ? esp_enabled : true;
     
     ModStatus bsa_status;
-    if (this->bsa_suffixes.size() > 0 && this->enabled_bsas.size() == 0) {
+    if (bsa_suffixes.size() > 0 && enabled_bsas.size() == 0) {
         bsa_status = ModStatus::DISABLED;
-    } else if (this->bsa_suffixes.size() != this->enabled_bsas.size()) {
+    } else if (bsa_suffixes.size() != enabled_bsas.size()) {
         bsa_status = ModStatus::PARTIAL;
     } else {
-        auto anim_it = this->enabled_bsas.find("Animations");
-        if (anim_it != this->enabled_bsas.cend()) {
-            // check if Animations BSA is present in both sResourceArchiveList and sResourceToLoadInMemoryList
-            bsa_status = anim_it->second == 2 ? ModStatus::ENABLED : ModStatus::PARTIAL;
-        } else {
+        bool bad_anims = false;
+        for (auto bsa_pair : enabled_bsas) {
+            if (bsa_pair.first.find("Animations") == 0 && bsa_pair.second != 2) {
+                bsa_status = ModStatus::PARTIAL;
+                bad_anims = true;
+                break;
+            }
+        }
+
+        if (!bad_anims) {
             bsa_status = ModStatus::ENABLED;
         }
     }
@@ -86,13 +91,30 @@ ModStatus SkyrimMod::getStatus(void) {
         case ModStatus::PARTIAL:
             return ModStatus::PARTIAL;
         case ModStatus::DISABLED:
-            return (esp_status && this->has_esp) ? ModStatus::PARTIAL : ModStatus::DISABLED;
+            return (esp_status && has_esp) ? ModStatus::PARTIAL : ModStatus::DISABLED;
         case ModStatus::ENABLED:
-            return esp_status ? ModStatus::ENABLED : ModStatus::PARTIAL;
+            return esp_status ? ModStatus::ENABLED : (bsa_suffixes.empty() ? ModStatus::DISABLED : ModStatus::PARTIAL);
         default:
             PANIC();
             return ModStatus::DISABLED;
     }
+}
+
+void SkyrimMod::enable(void) {
+    enabled_bsas.clear();
+    for (std::string bsa : bsa_suffixes) {
+        int count = bsa.find("Animations") == 0 ? 2 : 1;
+        enabled_bsas.insert(std::pair(bsa, count));
+    }
+
+    if (has_esp) {
+        esp_enabled = true;
+    }
+}
+
+void SkyrimMod::disable(void) {
+    enabled_bsas.clear();
+    esp_enabled = false;
 }
 
 void SkyrimMod::loadSooner(void) {
