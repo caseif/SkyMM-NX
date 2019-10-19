@@ -38,6 +38,7 @@ find "./include" "./src" -type f \( -iname "*.c" -or -iname "*.h" -or -iname "*.
 
     count=$((count+1))
 
+    remove_nl=0
     if grep -Pzoq "(?s)\/\*.*Copyright \(c\).*?\*\/" "$file"; then
         echo "Updating header for file $file"
 
@@ -46,6 +47,7 @@ find "./include" "./src" -type f \( -iname "*.c" -or -iname "*.h" -or -iname "*.
         # with a neat trick to deal with a multi-line context
         # we also append a dot to preserve trailing whitespace during substitution
         output=$(gawk -v RS='^$' -v hdr="$header\n\n" '{sub(/\/\*.*?Copyright \(c\).*?\*\/\n*/,hdr)}1 {print $0}' $file && echo .)
+        remove_nl=1
     else
         echo "Generating new header for file $file"
         
@@ -58,8 +60,12 @@ find "./include" "./src" -type f \( -iname "*.c" -or -iname "*.h" -or -iname "*.
     output="${output//%/%%}"
     # escape previously-escaped newlines since printf likes to convert them too
     output="${output//\\n/\\\\n}"
-    # remove the trailing dot we added
-    output="${output:0:-1}"
+    # remove the trailing dot we added (and the trailing newline if required)
+    if [ $remove_nl -eq 1 ]; then
+        output="${output:0:-2}"
+    else
+        output="${output:0:-1}"
+    fi
     # finally, write it to disk!
     printf "$output" > $file
 done
