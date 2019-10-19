@@ -54,6 +54,8 @@
 #define HEADER_HEIGHT 2
 #define FOOTER_HEIGHT 4
 
+static HidControllerKeys g_key_edit_lo = KEY_Y;
+
 int discoverMods() {
     DIR *dir = opendir(SKYRIM_DATA_DIR);
 
@@ -158,7 +160,7 @@ int initialize(void) {
     CONSOLE_MOVE_DOWN(3);
     printf("Mod listing:\n\n");
     for (auto it = get_global_mod_list().cbegin(); it != get_global_mod_list().cend(); it++) {
-        ModStatus status = (it->get())->getStatus();
+        ModStatus status = (*it)->getStatus();
         const char *status_str;
         switch (status) {
             case ModStatus::ENABLED:
@@ -174,34 +176,67 @@ int initialize(void) {
                 PANIC();
                 return -1;
         }
-        printf("  - %s (%s)\n", it->get()->base_name.c_str(), status_str);
+        printf("  - %s (%s)\n", (*it)->base_name.c_str(), status_str);
     }
 
     return 0;
 }
 
+static void redrawHeader(void) {
+    CONSOLE_SET_POS(0, 0);
+    CONSOLE_CLEAR_LINE();
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
+    printf("SkyMM-NX v" STRINGIZE(__VERSION) " by caseif");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+}
+
+static void redrawFooter(bool edit_lo) {
+    CONSOLE_SET_POS(40, 0);
+    CONSOLE_CLEAR_LINE();
+
+    CONSOLE_MOVE_DOWN(1);
+    CONSOLE_CLEAR_LINE();
+    if (edit_lo) {
+        CONSOLE_SET_ATTRS(CONSOLE_ATTR_NONE);
+        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_YELLOW);
+        printf("(Editing load order)");
+        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+        CONSOLE_SET_ATTRS(CONSOLE_ATTR_BOLD);
+    }
+    CONSOLE_MOVE_LEFT(255);
+
+    CONSOLE_MOVE_DOWN(1);
+    CONSOLE_CLEAR_LINE();
+
+    CONSOLE_MOVE_DOWN(1);
+    CONSOLE_CLEAR_LINE();
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_GREEN);
+    printf("(Up/Down) Navigate  |  (Y) (hold) Change load order  |  (+) Exit");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+    CONSOLE_MOVE_LEFT(255);
+}
+
 int main(int argc, char **argv) {
     consoleInit(NULL);
 
-    ModGui *gui;
+    ModGui gui = ModGui(get_global_mod_list(), HEADER_HEIGHT, CONSOLE_LINES - HEADER_HEIGHT - FOOTER_HEIGHT);
 
     int init_status = initialize();
     if (RC_SUCCESS(init_status)) {
-        gui = new ModGui(get_global_mod_list(), HEADER_HEIGHT, CONSOLE_LINES - HEADER_HEIGHT - FOOTER_HEIGHT);
         CONSOLE_CLEAR_SCREEN();
 
-        CONSOLE_SET_POS(0, 0);
-        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
-        printf("SkyMM-NX v" STRINGIZE(__VERSION) " by caseif");
-        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
-
-        gui->redraw();
+        redrawHeader();
+        gui.redraw();
+        redrawFooter(false);
     }
+
+    bool edit_load_order = false;
 
     while (appletMainLoop()) {
         hidScanInput();
 
         u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+        u64 kUp = hidKeysUp(CONTROLLER_P1_AUTO);
 
         if (kDown & KEY_PLUS) {
             break;
@@ -212,10 +247,28 @@ int main(int argc, char **argv) {
             continue;
         }
 
+        if (kDown & g_key_edit_lo) {
+            edit_load_order = true;
+            redrawFooter(true);
+        }
+        
+        if (kUp & g_key_edit_lo) {
+            edit_load_order = false;
+            redrawFooter(false);
+        }
+
         if (kDown & KEY_DOWN) {
-            gui->scrollSelection(1);
+            if (edit_load_order) {
+                gui.getSelectedMod()->loadLater();
+            }
+
+            gui.scrollSelection(1);
         } else if (kDown & KEY_UP) {
-            gui->scrollSelection(-1);
+            if (edit_load_order) {
+                gui.getSelectedMod()->loadSooner();
+            }
+
+            gui.scrollSelection(-1);
         } else if (kDown & KEY_A) {
             //TODO: toggle mod
         }

@@ -72,6 +72,8 @@ class ModGui {
                 scroll(0) {
         }
 
+        std::shared_ptr<SkyrimMod> getSelectedMod(void);
+
         void scrollSelection(int delta);
 
         void redraw(void);

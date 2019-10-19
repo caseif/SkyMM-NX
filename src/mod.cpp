@@ -28,6 +28,7 @@
 #include "mod.hpp"
 #include "string_helper.hpp"
 
+#include <algorithm>
 #include <memory>
 #include <string>
 
@@ -91,6 +92,36 @@ ModStatus SkyrimMod::getStatus(void) {
         default:
             PANIC();
             return ModStatus::DISABLED;
+    }
+}
+
+void SkyrimMod::loadSooner(void) {
+    for (auto it = g_mod_list.begin(); it != g_mod_list.end(); it++) {
+        if ((*it)->base_name == this->base_name) {
+            if (it == g_mod_list.begin()) {
+                // mod is already first, nothing to do
+                return;
+            } else {
+                // swap it with the previous mod
+                std::iter_swap(it, it - 1);
+                return;
+            }
+        }
+    }
+}
+
+void SkyrimMod::loadLater(void) {
+    for (auto it = g_mod_list.begin(); it != g_mod_list.end(); it++) {
+        if ((*it)->base_name == this->base_name) {
+            if (it == g_mod_list.end() - 1) {
+                // mod is already last, nothing to do
+                return;
+            } else {
+                // swap it with the next mod
+                std::iter_swap(it, it + 1);
+                return;
+            }
+        }
     }
 }
 

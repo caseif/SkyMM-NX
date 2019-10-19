@@ -69,6 +69,10 @@ struct SkyrimMod {
     }
 
     ModStatus getStatus(void);
+
+    void loadSooner(void);
+
+    void loadLater(void);
 };
 
 std::vector<std::shared_ptr<SkyrimMod>> &get_global_mod_list(void);

@@ -31,12 +31,16 @@
 #define MAX(a, b) ((a > b) ? a : b)
 #define CLAMP(n, l, h) (MIN(MAX(n, l), h))
 
+std::shared_ptr<SkyrimMod> ModGui::getSelectedMod(void) {
+    return *(mod_list.cbegin() + selected_row);
+}
+
 void ModGui::scrollSelection(int delta) {
     if (delta == 0) {
         return;
     }
 
-    size_t new_selection = CLAMP((ssize_t) (selected_row + delta), 0, mod_list.size() - 1);
+    size_t new_selection = CLAMP((ssize_t) (selected_row + delta), 0, (ssize_t) (mod_list.size() - 1));
     if (new_selection == selected_row) {
         return;
     }
