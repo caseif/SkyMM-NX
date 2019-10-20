@@ -56,11 +56,12 @@ void ModGui::scrollSelection(int delta) {
         new_scroll = MAX(scroll, new_selection - MIN(new_selection, display_rows - 1));
     }
 
-    if (new_scroll == scroll && false) {
-        redrawRow(listToGuiSpace(selected_row));
-        redrawRow(listToGuiSpace(new_selection));
-        
+    if (new_scroll == scroll) {
+        int old_selection = selected_row;
         selected_row = new_selection;
+
+        redrawRow(listToGuiSpace(old_selection));
+        redrawRow(listToGuiSpace(new_selection));
     } else {
         selected_row = new_selection;
         scroll = new_scroll;

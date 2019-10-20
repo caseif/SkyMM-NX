@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <string>
@@ -65,6 +66,8 @@ static std::string g_status_msg = "";
 static bool g_tmp_status = false;
 
 static ModList g_mod_list_tmp;
+
+static std::string g_plugins_header;
 
 int discoverMods() {
     DIR *dir = opendir(SKYRIM_DATA_DIR);
@@ -119,17 +122,29 @@ int discoverMods() {
 int processPluginsFile() {
     std::ifstream plugins_stream = std::ifstream(SKYRIM_PLUGINS_FILE, std::ios::in);
     if (!plugins_stream.good()) {
-        FATAL("Failed to read Plugins file");
+        FATAL("Failed to open Plugins file");
         return -1;
     }
 
+    bool in_header = true;
+    std::stringstream header_stream;
     std::string line;
     while (std::getline(plugins_stream, line)) {
-        if (line.length() == 0 || line.at(0) != '*') {
+        if (line.length() == 0 || line.at(0) == '#') {
+            if (in_header) {
+                header_stream << line << '\n';
+            }
             continue;
         }
 
-        std::string file_name = line.substr(1);
+        if (in_header) {
+            g_plugins_header = header_stream.str();
+            in_header = false;
+        }
+
+        bool enable = line.at(0) == '*';
+
+        std::string file_name = enable ? line.substr(1) : line;
         ModFile file_def = ModFile::fromFileName(file_name);
         if (file_def.type != ModFileType::ESP) {
             continue;
@@ -145,7 +160,31 @@ int processPluginsFile() {
             }
         }
 
-        mod->esp_enabled = true;
+        mod->esp_enabled = enable;
+    }
+
+    return 0;
+}
+
+int writePluginsFile(void) {
+    std::ofstream plugins_stream = std::ofstream(SKYRIM_PLUGINS_FILE,
+            std::ios::out | std::ios::trunc | std::ios::binary);
+    if (!plugins_stream.good()) {
+        FATAL("Failed to open Plugins file");
+        return -1;
+    }
+
+    // write header that we loaded earlier
+    plugins_stream << g_plugins_header;
+
+    for (std::shared_ptr<SkyrimMod> mod : getGlobalModList()) {
+        if (mod->has_esp) {
+            if (mod->esp_enabled) {
+                plugins_stream << '*';
+            }
+            plugins_stream << mod->base_name << ".esp";
+            plugins_stream << '\n';
+        }
     }
 
     return 0;
@@ -351,7 +390,7 @@ int main(int argc, char **argv) {
         }
 
         if (kDown & KEY_MINUS) {
-            //TODO: save changes
+            writePluginsFile();
             g_dirty = false;
 
             g_status_msg = "Wrote changes to SDMC!";

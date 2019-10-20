@@ -43,3 +43,5 @@ int readIniFile(const char *path, StdIni &ini);
 int processIniDefs(StdIni &ini, const char *key, const std::vector<std::string> &expected_suffixes);
 
 int parseInis(ModList &final_mod_list, ModList &temp_mod_list);
+
+int writeChanges(void);
