@@ -330,7 +330,7 @@ int main(int argc, char **argv) {
             }
         }
 
-        if (RC_FAILURE(init_status)) {
+        if (RC_FAILURE(init_status) || fatal_occurred()) {
             consoleUpdate(NULL);
             continue;
         }
@@ -390,7 +390,12 @@ int main(int argc, char **argv) {
         }
 
         if (kDown & KEY_MINUS) {
+            g_status_msg = "Saving changes...";
+            redrawFooter();
+            consoleUpdate(NULL);
+
             writePluginsFile();
+            writeIniChanges();
             g_dirty = false;
 
             g_status_msg = "Wrote changes to SDMC!";

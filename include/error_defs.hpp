@@ -35,7 +35,8 @@
                         CONSOLE_MOVE_DOWN(3); \
                         CONSOLE_MOVE_LEFT(99); \
                         CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_GREEN); \
-                        printf("Press (+) to exit.\n")
+                        printf("Press (+) to exit.\n"); \
+                        g_fatal_occurred = true
 
 #define FATAL_CODE(code, fmt, ...) FATAL(fmt " (code %d)", ##__VA_ARGS__, code)
 
@@ -48,3 +49,9 @@
                                                 FATAL_CODE(rc, fail_fmt, ##__VA_ARGS__); \
                                                 return -1; \
                                             }
+
+static bool g_fatal_occurred = false;
+
+inline bool fatal_occurred(void) {
+    return g_fatal_occurred;
+}

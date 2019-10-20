@@ -32,12 +32,13 @@
 #include <inipp/inipp.h>
 #include <switch.h>
 
+#include <algorithm>
 #include <fstream>
 #include <memory>
 
 static const std::vector<std::string> g_archive_types_1 = {"", "Animations", "Meshes", "Sounds"};
 static const std::vector<std::string> g_archive_types_2 = {"Textures", "Voices"};
-static const std::vector<std::string> g_archive_types_3 = {"Animaini_tions"};
+static const std::vector<std::string> g_archive_types_3 = {"Animations"};
 
 static StdIni g_skyrim_ini;
 static StdIni g_skyrim_lang_ini;
@@ -83,6 +84,26 @@ static inline const char *get_language_code(SetLanguage &lang) {
     }
 }
 
+static std::string getString(StdIni &ini, std::string section, std::string key) {
+    auto sec = ini.sections.find(section);
+    if (sec != ini.sections.cend()) {
+        auto val_it = sec->second.find(key);
+        if (val_it != sec->second.cend()) {
+            return val_it->second;
+        }
+    }
+    return "";
+}
+
+static int getLanguage(SetLanguage *lang) {
+    int rc;
+    u64 lang_code;
+    DO_OR_DIE(rc, setInitialize(), "Failed to initialize settings");
+    DO_OR_DIE(rc, setGetSystemLanguage(&lang_code), "Failed to get system language");
+    DO_OR_DIE(rc, setMakeLanguage(lang_code, reinterpret_cast<s32*>(lang)), "Failed to convert language code");
+    return 0;
+}
+
 int readIniFile(std::string &path, StdIni &ini) {
     std::ifstream ini_stream = std::ifstream(path, std::ios::in);
     if (!ini_stream.good()) {
@@ -102,18 +123,7 @@ int readIniFile(const char *path, StdIni &ini) {
 
 int processIniDefs(ModList &final_mod_list, ModList &temp_mod_list, StdIni &ini, const char *key,
         const std::vector<std::string> &expected_suffixes) {
-    auto archive_sec_it = ini.sections.find(INI_SECTION_ARCHIVE);
-    if (archive_sec_it == ini.sections.cend()) {
-        return 0;
-    }
-
-    auto sec = archive_sec_it->second;
-    auto archive_list_it = sec.find(std::string(key));
-    if (archive_list_it == sec.cend()) {
-        return 0;
-    }
-
-    std::string archive_list_str = archive_list_it->second;
+    std::string archive_list_str = getString(ini, INI_SECTION_ARCHIVE, key);
     std::vector<std::string> archive_list = split(archive_list_str, ",");
     
     for (std::string archive_file : archive_list) {
@@ -155,16 +165,10 @@ int processIniDefs(ModList &final_mod_list, ModList &temp_mod_list, StdIni &ini,
 
 int parseInis(ModList &final_mod_list, ModList &temp_mod_list) {
     int rc;
-
-    u64 lang_code;
-
-    DO_OR_DIE(rc, setInitialize(), "Failed to initialize settings");
-
-    DO_OR_DIE(rc, setGetSystemLanguage(&lang_code), "Failed to get system language");
-
     SetLanguage lang;
-    DO_OR_DIE(rc, setMakeLanguage(lang_code, reinterpret_cast<s32*>(&lang)), "Failed to convert language code");
-
+    if (RC_FAILURE(getLanguage(&lang))) {
+        return -1;
+    }
     const char *skyrim_lang_code = get_language_code(lang);
 
     char ini_lang_file[sizeof(SKYRIM_INI_LANG_FILE) - 2 + LANG_CODE_MAX_LEN + 1];
@@ -176,6 +180,84 @@ int parseInis(ModList &final_mod_list, ModList &temp_mod_list) {
     processIniDefs(final_mod_list, temp_mod_list, g_skyrim_ini, INI_ARCHIVE_LIST_1, g_archive_types_1);
     processIniDefs(final_mod_list, temp_mod_list, g_skyrim_ini, INI_ARCHIVE_LIST_3, g_archive_types_3);
     processIniDefs(final_mod_list, temp_mod_list, g_skyrim_lang_ini, INI_ARCHIVE_LIST_2, g_archive_types_2);
+
+    return 0;
+}
+
+static int writeFileList(const char *path, StdIni &ini, std::string key,
+        std::vector<std::string> const &expected_suffixes) {
+    std::vector<ModFile> file_list;
+
+    std::string archive_list_str = getString(ini, INI_SECTION_ARCHIVE, key);
+    std::vector<std::string> archive_list = split(archive_list_str, ",");
+    std::vector<ModFile> cur_file_list;
+    std::transform(archive_list.cbegin(), archive_list.cend(), std::back_inserter(cur_file_list), ModFile::fromFileName);
+
+    for (ModFile file : cur_file_list) {
+        if (file.base_name == "Skyrim") {
+            file_list.insert(file_list.end(), file);
+        }
+    }
+
+    for (std::shared_ptr<SkyrimMod> mod : getGlobalModList()) {
+        for (std::pair<std::string, int> suffix_pair : mod->enabled_bsas) {
+            for (std::string expected_suffix : expected_suffixes) {
+                if (suffix_pair.first.find(expected_suffix) == 0) {
+                    file_list.insert(file_list.end(), {ModFileType::ESP, mod->base_name, suffix_pair.first});
+                    break;
+                }
+            }
+        }
+    }
+
+    std::stringstream ss;
+    for (auto mf_it = file_list.cbegin(); mf_it != file_list.cend(); mf_it++) {
+        ss << mf_it->base_name;
+        if (!mf_it->suffix.empty()) {
+            ss << " - " << mf_it->suffix;
+        }
+        ss << ".bsa";
+
+        if (mf_it != file_list.cend() - 1) {
+            ss << ", ";
+        }
+    }
+
+    std::string out_list_str = ss.str();
+
+    auto sec_it = ini.sections.find(INI_SECTION_ARCHIVE);
+    std::map<std::string, std::string> sec_map;
+    if (sec_it != ini.sections.cend()) {
+        sec_map = sec_it->second;
+    }
+
+    sec_map.insert_or_assign(key, out_list_str);
+
+    ini.sections.insert_or_assign(INI_SECTION_ARCHIVE, sec_map);
+
+    std::ofstream ini_stream(path, std::ios::out | std::ios::trunc | std::ios::binary);
+    if (!ini_stream.good()) {
+        FATAL("Failed to open %s", path);
+        return -1;
+    }
+
+    ini.generate(ini_stream);
+    return 0;
+}
+
+int writeIniChanges(void) {
+    SetLanguage lang;
+    if (RC_FAILURE(getLanguage(&lang))) {
+        return -1;
+    }
+    const char *skyrim_lang_code = get_language_code(lang);
+
+    char ini_lang_file[sizeof(SKYRIM_INI_LANG_FILE) - 2 + LANG_CODE_MAX_LEN + 1];
+    sprintf(ini_lang_file, SKYRIM_INI_LANG_FILE, skyrim_lang_code);
+
+    writeFileList(SKYRIM_INI_FILE, g_skyrim_ini, INI_ARCHIVE_LIST_1, g_archive_types_1);
+    writeFileList(ini_lang_file, g_skyrim_lang_ini, INI_ARCHIVE_LIST_2, g_archive_types_2);
+    writeFileList(SKYRIM_INI_FILE, g_skyrim_ini, INI_ARCHIVE_LIST_3, g_archive_types_3);
 
     return 0;
 }

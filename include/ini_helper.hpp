@@ -44,4 +44,4 @@ int processIniDefs(StdIni &ini, const char *key, const std::vector<std::string> 
 
 int parseInis(ModList &final_mod_list, ModList &temp_mod_list);
 
-int writeChanges(void);
+int writeIniChanges(void);

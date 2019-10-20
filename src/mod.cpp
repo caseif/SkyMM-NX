@@ -34,7 +34,7 @@
 
 static ModList g_mod_list;
 
-ModFile ModFile::fromFileName(std::string &file_name) {
+ModFile ModFile::fromFileName(std::string const &file_name) {
     size_t dot_index = file_name.find_last_of('.');
     if (dot_index == std::string::npos) {
         return {ModFileType::UNKNOWN};
@@ -151,7 +151,7 @@ ModList &getGlobalModList(void) {
     return g_mod_list;
 }
 
-std::shared_ptr<SkyrimMod> find_mod(ModList &mod_list, std::string &name) {
+std::shared_ptr<SkyrimMod> find_mod(ModList const &mod_list, std::string const &name) {
     std::shared_ptr<SkyrimMod> mod;
     for (std::shared_ptr<SkyrimMod> entry : mod_list) {
         if (entry->base_name == name) {

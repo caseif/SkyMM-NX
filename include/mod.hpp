@@ -50,7 +50,7 @@ struct ModFile {
     std::string base_name;
     std::string suffix;
 
-    static ModFile fromFileName(std::string &file_name);
+    static ModFile fromFileName(std::string const &file_name);
 };
 
 struct SkyrimMod {
@@ -60,7 +60,7 @@ struct SkyrimMod {
     std::vector<std::string> bsa_suffixes;
     std::map<std::string, int> enabled_bsas;
 
-    SkyrimMod(const std::string &base_name):
+    SkyrimMod(std::string const &base_name):
             base_name(base_name),
             has_esp(false),
             esp_enabled(false),
@@ -83,4 +83,4 @@ typedef std::vector<std::shared_ptr<SkyrimMod>> ModList;
 
 ModList &getGlobalModList(void);
 
-std::shared_ptr<SkyrimMod> find_mod(ModList &mod_list, std::string &name);
+std::shared_ptr<SkyrimMod> find_mod(ModList const &mod_list, std::string const &name);
