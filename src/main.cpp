@@ -76,6 +76,8 @@ static int g_scroll_dir = 0;
 static u64 g_last_scroll_time = 0;
 static bool g_scroll_initial_cooldown;
 
+static bool g_edit_load_order = false;
+
 static u64 _nanotime(void) {
     return armTicksToNs(armGetSystemTick());
 }
@@ -315,7 +317,21 @@ void handleScrollHold(u64 kDown, u64 kHeld, HidControllerKeys key, ModGui &gui) 
         if (_nanotime() - g_last_scroll_time >= period) {
             g_last_scroll_time = _nanotime();
             g_scroll_initial_cooldown = false;
+
+            if (g_edit_load_order) {
+                if (gui.getSelectedIndex() < getGlobalModList().size() - 1) {
+                    if (g_scroll_dir == 1) {
+                        gui.getSelectedMod()->loadLater();
+                    } else {
+                        gui.getSelectedMod()->loadSooner();
+                    }
+                    g_dirty = true;
+                }
+            }
+
             gui.scrollSelection(g_scroll_dir);
+
+            clearTempEffects();
         }
     }
 }
@@ -333,8 +349,6 @@ int main(int argc, char **argv) {
         gui.redraw();
         redrawFooter();
     }
-
-    bool edit_load_order = false;
 
     while (appletMainLoop()) {
         hidScanInput();
@@ -360,13 +374,13 @@ int main(int argc, char **argv) {
         }
 
         if (kDown & g_key_edit_lo) {
-            edit_load_order = true;
+            g_edit_load_order = true;
             g_status_msg = "Editing load order";
             redrawFooter();
         }
         
         if (kUp & g_key_edit_lo) {
-            edit_load_order = false;
+            g_edit_load_order = false;
             g_status_msg = "";
             redrawFooter();
         }
@@ -389,7 +403,7 @@ int main(int argc, char **argv) {
         }
 
         if (kDown & KEY_DOWN) {
-            if (edit_load_order) {
+            if (g_edit_load_order) {
                 if (gui.getSelectedIndex() < getGlobalModList().size() - 1) {
                     gui.getSelectedMod()->loadLater();
                     g_dirty = true;
@@ -404,7 +418,7 @@ int main(int argc, char **argv) {
 
             clearTempEffects();
         } else if (kDown & KEY_UP) {
-            if (edit_load_order) {
+            if (g_edit_load_order) {
                 if (gui.getSelectedIndex() > 0) {
                     gui.getSelectedMod()->loadSooner();
                     g_dirty = true;
