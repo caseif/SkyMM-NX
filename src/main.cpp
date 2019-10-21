@@ -57,6 +57,9 @@
 
 #define HRULE "--------------------------------"
 
+#define SCROLL_INTERVAL 100000000
+#define SCROLL_INITIAL_DELAY 400000000
+
 static HidControllerKeys g_key_edit_lo = KEY_Y;
 
 static bool g_dirty = false;
@@ -68,6 +71,14 @@ static bool g_tmp_status = false;
 static ModList g_mod_list_tmp;
 
 static std::string g_plugins_header;
+
+static int g_scroll_dir = 0;
+static u64 g_last_scroll_time = 0;
+static bool g_scroll_initial_cooldown;
+
+static u64 _nanotime(void) {
+    return armTicksToNs(armGetSystemTick());
+}
 
 int discoverMods() {
     DIR *dir = opendir(SKYRIM_DATA_DIR);
@@ -297,6 +308,18 @@ static void clearTempEffects(void) {
     }
 }
 
+void handleScrollHold(u64 kDown, u64 kHeld, HidControllerKeys key, ModGui &gui) {
+    if (kHeld & key && !(kDown & key)) {
+        u64 period = g_scroll_initial_cooldown ? SCROLL_INITIAL_DELAY : SCROLL_INTERVAL;
+
+        if (_nanotime() - g_last_scroll_time >= period) {
+            g_last_scroll_time = _nanotime();
+            g_scroll_initial_cooldown = false;
+            gui.scrollSelection(g_scroll_dir);
+        }
+    }
+}
+
 int main(int argc, char **argv) {
     consoleInit(NULL);
 
@@ -318,6 +341,7 @@ int main(int argc, char **argv) {
 
         u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
         u64 kUp = hidKeysUp(CONTROLLER_P1_AUTO);
+        u64 kHeld = hidKeysHeld(CONTROLLER_P1_AUTO);
 
         if (kDown & KEY_PLUS) {
             if (g_dirty && !g_dirty_warned) {
@@ -347,6 +371,23 @@ int main(int argc, char **argv) {
             redrawFooter();
         }
 
+        if ((kUp & KEY_DOWN) && g_scroll_dir == 1) {
+            g_scroll_dir = 0;
+        } else if ((kUp & KEY_UP) && g_scroll_dir == -1) {
+            g_scroll_dir = 0;
+        }
+
+        switch (g_scroll_dir) {
+            case -1:
+                handleScrollHold(kDown, kHeld, KEY_UP, gui);
+                break;
+            case 1:
+                handleScrollHold(kDown, kHeld, KEY_DOWN, gui);
+                break;
+            default:
+                break;
+        }
+
         if (kDown & KEY_DOWN) {
             if (edit_load_order) {
                 if (gui.getSelectedIndex() < getGlobalModList().size() - 1) {
@@ -354,6 +395,10 @@ int main(int argc, char **argv) {
                     g_dirty = true;
                 }
             }
+
+            g_last_scroll_time = _nanotime();
+            g_scroll_initial_cooldown = true;
+            g_scroll_dir = 1;
 
             gui.scrollSelection(1);
 
@@ -365,6 +410,10 @@ int main(int argc, char **argv) {
                     g_dirty = true;
                 }
             }
+
+            g_last_scroll_time = _nanotime();
+            g_scroll_initial_cooldown = true;
+            g_scroll_dir = -1;
 
             gui.scrollSelection(-1);
 
