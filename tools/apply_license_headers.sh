@@ -1,12 +1,14 @@
 #!/bin/bash
 
-PROJECT="SkyrimNXModManager"
+PROJECT="SkyMM-NX"
 YEAR="2019"
 AUTHOR="Max Roncace"
 EMAIL="mproncace@gmail.com"
 
+hdr_file="./res/HEADER.txt"
+
 # read the header template
-header=$(cat ./res/HEADER.txt)
+header=$(cat $hdr_file)
 
 # apply replacements
 header=$(sed -r "s/\\$\{project\}/$PROJECT/" <<< "$header")
@@ -21,6 +23,13 @@ header=$(sed -r "s/^$/ */" <<< "$header")
 
 # add /* */ to the start and end
 header=$(printf "/*"'\n'"$header"'\n'" */")
+
+# add two trailing newlines for one blank line of padding after the header
+header=$header$'\n'$'\n'
+
+# escape the @ symbol in the header (from the email address) since Perl doesn't like it
+# the "pf" stands for Perl-friendly
+header_pf=${header//\@/\\@}
 
 # variable to track how many files are updated
 count=0
@@ -38,34 +47,27 @@ find "./include" "./src" -type f \( -iname "*.c" -or -iname "*.h" -or -iname "*.
 
     count=$((count+1))
 
-    remove_nl=0
     if grep -Pzoq "(?s)\/\*.*Copyright \(c\).*?\*\/" "$file"; then
         echo "Updating header for file $file"
 
-        # adapted from https://stackoverflow.com/a/21702566
-        # this basically replaces the license pattern with our current formatted license,
-        # with a neat trick to deal with a multi-line context
-        # we also append a dot to preserve trailing whitespace during substitution
-        output=$(gawk -v RS='^$' -v hdr="$header\n\n" '{sub(/\/\*.*?Copyright \(c\).*?\*\/\n*/,hdr)}1 {print $0}' $file && echo .)
-        remove_nl=1
+        # we use a relatively simple Perl script to replace the existing copyright notice
+        # we append a newline to the end since Perl strips it
+        # we also append a dot to preserve the newline during substitution
+        output=$(perl -p0e "sprintf s/\/\*.*?Copyright \(c\).*?\*\/\n*/${header_pf//\//\\/}/s" $file)$'\n'"."
     else
         echo "Generating new header for file $file"
         
         # save output to intermediate variable with trailing character
         # this prevents bash from stripping trailing newlines
-        output="$header"$'\n'$'\n'"$(cat $file && echo .)"
+        output="$header""$(cat $file && echo .)"
     fi
 
     # escape any formatting sequences present in the code since printf likes to convert them
     output="${output//%/%%}"
     # escape previously-escaped newlines since printf likes to convert them too
-    output="${output//\\n/\\\\n}"
+    output="${output//\\/\\\\}"
     # remove the trailing dot we added (and the trailing newline if required)
-    if [ $remove_nl -eq 1 ]; then
-        output="${output:0:-2}"
-    else
-        output="${output:0:-1}"
-    fi
+    output="${output:0:-1}"
     # finally, write it to disk!
     printf "$output" > $file
 done

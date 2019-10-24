@@ -1,5 +1,5 @@
 /*
- * This file is a part of SkyrimNXModManager.
+ * This file is a part of SkyMM-NX.
  * Copyright (c) 2019, Max Roncace <mproncace@gmail.com>
  *
  * The MIT License
