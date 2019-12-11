@@ -26,7 +26,7 @@
 #include "error_defs.hpp"
 #include "ini_helper.hpp"
 #include "mod.hpp"
-#include "path_defs.hpp"
+#include "path_helper.hpp"
 #include "string_helper.hpp"
 
 #include <inipp/inipp.h>
@@ -171,10 +171,10 @@ int parseInis(ModList &final_mod_list, ModList &temp_mod_list) {
     }
     const char *skyrim_lang_code = get_language_code(lang);
 
-    char ini_lang_file[sizeof(SKYRIM_INI_LANG_FILE) - 2 + LANG_CODE_MAX_LEN + 1];
-    sprintf(ini_lang_file, SKYRIM_INI_LANG_FILE, skyrim_lang_code);
+    std::string ini_lang_base = std::string(SKYRIM_INI_LANG_FILE_PREFIX) + skyrim_lang_code + ".ini";
+    std::string ini_lang_file = getRomfsPath(ini_lang_base);
 
-    DO_OR_DIE(rc, readIniFile(SKYRIM_INI_FILE, g_skyrim_ini), "Failed to read Skyrim.ini");
+    DO_OR_DIE(rc, readIniFile(getRomfsPath(SKYRIM_INI_FILE).c_str(), g_skyrim_ini), "Failed to read Skyrim.ini");
     DO_OR_DIE(rc, readIniFile(ini_lang_file, g_skyrim_lang_ini), "Failed to read Skyrim_%s.ini", skyrim_lang_code);
 
     processIniDefs(final_mod_list, temp_mod_list, g_skyrim_ini, INI_ARCHIVE_LIST_1, g_archive_types_1);
@@ -252,12 +252,12 @@ int writeIniChanges(void) {
     }
     const char *skyrim_lang_code = get_language_code(lang);
 
-    char ini_lang_file[sizeof(SKYRIM_INI_LANG_FILE) - 2 + LANG_CODE_MAX_LEN + 1];
-    sprintf(ini_lang_file, SKYRIM_INI_LANG_FILE, skyrim_lang_code);
+    std::string ini_lang_base = std::string(SKYRIM_INI_LANG_FILE_PREFIX) + skyrim_lang_code + ".ini";
+    std::string ini_lang_file = getRomfsPath(ini_lang_base);
 
-    writeFileList(SKYRIM_INI_FILE, g_skyrim_ini, INI_ARCHIVE_LIST_1, g_archive_types_1);
-    writeFileList(ini_lang_file, g_skyrim_lang_ini, INI_ARCHIVE_LIST_2, g_archive_types_2);
-    writeFileList(SKYRIM_INI_FILE, g_skyrim_ini, INI_ARCHIVE_LIST_3, g_archive_types_3);
+    writeFileList(getRomfsPath(SKYRIM_INI_FILE).c_str(), g_skyrim_ini, INI_ARCHIVE_LIST_1, g_archive_types_1);
+    writeFileList(ini_lang_file.c_str(), g_skyrim_lang_ini, INI_ARCHIVE_LIST_2, g_archive_types_2);
+    writeFileList(getRomfsPath(SKYRIM_INI_FILE).c_str(), g_skyrim_ini, INI_ARCHIVE_LIST_3, g_archive_types_3);
 
     return 0;
 }

@@ -28,7 +28,7 @@
 #include "gui.hpp"
 #include "ini_helper.hpp"
 #include "mod.hpp"
-#include "path_defs.hpp"
+#include "path_helper.hpp"
 #include "string_helper.hpp"
 
 #include <inipp/inipp.h>
@@ -83,10 +83,10 @@ static u64 _nanotime(void) {
 }
 
 int discoverMods() {
-    DIR *dir = opendir(SKYRIM_DATA_DIR);
+    DIR *dir = opendir(getRomfsPath(SKYRIM_DATA_DIR).c_str());
 
     if (!dir) {
-        FATAL("No Skyrim data folder found!");
+        FATAL("No Skyrim data folder found!\nSearched in %s", getBaseRomfsPath());
         return -1;
     }
 
@@ -133,7 +133,7 @@ int discoverMods() {
 }
 
 int processPluginsFile() {
-    std::ifstream plugins_stream = std::ifstream(SKYRIM_PLUGINS_FILE, std::ios::in);
+    std::ifstream plugins_stream = std::ifstream(getRomfsPath(SKYRIM_PLUGINS_FILE), std::ios::in);
     if (!plugins_stream.good()) {
         FATAL("Failed to open Plugins file");
         return -1;
@@ -180,7 +180,7 @@ int processPluginsFile() {
 }
 
 int writePluginsFile(void) {
-    std::ofstream plugins_stream = std::ofstream(SKYRIM_PLUGINS_FILE,
+    std::ofstream plugins_stream = std::ofstream(getRomfsPath(SKYRIM_PLUGINS_FILE),
             std::ios::out | std::ios::trunc | std::ios::binary);
     if (!plugins_stream.good()) {
         FATAL("Failed to open Plugins file");
