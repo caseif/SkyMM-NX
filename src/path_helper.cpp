@@ -5,12 +5,23 @@
 
 #include <string>
 
+#define SPL_CONFIG_EXO_VERSION ((SplConfigItem) 65000)
+
 static bool initted = false;
 static bool newRomfsPath = false;
 
 static void _init(void) {
-    // AMS 0.10.0 for Horizon 9.1.0 changed the RomFS directory
-    if (hosversionAtLeast(9, 1, 0)) {
+    splInitialize();
+    u64 ver = 0;
+    splGetConfig(SPL_CONFIG_EXO_VERSION, &ver);
+    splExit();
+
+    u32 exoMajor = (ver >> 32) & 0xFF;
+    u32 exoMinor = (ver >> 24) & 0xFF;
+    u32 exoMicro = (ver >> 16) & 0xFF;
+
+    // AMS 0.10.0 changed the RomFS directory
+    if (exoMajor >= 0 && exoMinor >= 10 && exoMicro >= 0) {
         newRomfsPath = true;
     } else {
         newRomfsPath = false;
