@@ -21,7 +21,7 @@ static void _init(void) {
     u32 exoMicro = (ver >> 16) & 0xFF;
 
     // AMS 0.10.0 changed the RomFS directory
-    if (exoMajor >= 0 && exoMinor >= 10 && exoMicro >= 0) {
+    if (exoMajor > 0 || (exoMinor >= 10)) {
         newRomfsPath = true;
     } else {
         newRomfsPath = false;
