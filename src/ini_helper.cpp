@@ -100,7 +100,7 @@ static int getLanguage(SetLanguage *lang) {
     u64 lang_code;
     DO_OR_DIE(rc, setInitialize(), "Failed to initialize settings");
     DO_OR_DIE(rc, setGetSystemLanguage(&lang_code), "Failed to get system language");
-    DO_OR_DIE(rc, setMakeLanguage(lang_code, reinterpret_cast<s32*>(lang)), "Failed to convert language code");
+    DO_OR_DIE(rc, setMakeLanguage(lang_code, lang), "Failed to convert language code");
     return 0;
 }
 
