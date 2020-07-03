@@ -27,7 +27,7 @@ ICON		:=  res/icon.jpg
 
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 
-CFLAGS	:=	-g -Wall -O3 -ffunction-sections \
+CFLAGS	:=	-Wall -O3 -ffunction-sections \
 			$(ARCH) $(DEFINES) \
 			-D__VERSION_MAJOR=${VERSION_MAJOR} \
 			-D__VERSION_MINOR=${VERSION_MINOR} \
@@ -38,8 +38,8 @@ CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=c++17
 
-ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-no-as-needed,-Map,$(notdir $*.map)
+ASFLAGS	:=	$(ARCH)
+LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,-no-as-needed,-Map,$(notdir $*.map)
 
 LIBS	:= -lnx
 

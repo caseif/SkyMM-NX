@@ -16,9 +16,9 @@ static void _init(void) {
     splGetConfig(SPL_CONFIG_EXO_VERSION, &ver);
     splExit();
 
-    u32 exoMajor = (ver >> 32) & 0xFF;
-    u32 exoMinor = (ver >> 24) & 0xFF;
-    u32 exoMicro = (ver >> 16) & 0xFF;
+    u32 exoMajor = (ver >> 56) & 0xFF;
+    u32 exoMinor = (ver >> 48) & 0xFF;
+    u32 exoMicro = (ver >> 40) & 0xFF;
 
     // AMS 0.10.0 changed the RomFS directory
     if (exoMajor > 0 || (exoMinor >= 10)) {
