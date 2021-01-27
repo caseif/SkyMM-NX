@@ -121,6 +121,9 @@ int discoverMods() {
 
         if (mod_file.type == ModFileType::ESP) {
             mod->has_esp = true;
+        } else if (mod_file.type == ModFileType::ESM) {
+            mod->has_esp = true;
+            mod->is_master = true;
         } else if (mod_file.type == ModFileType::BSA) {
             mod->bsa_suffixes.insert(mod->bsa_suffixes.end(), mod_file.suffix);
         } else {
@@ -159,7 +162,7 @@ int processPluginsFile() {
 
         std::string file_name = enable ? line.substr(1) : line;
         ModFile file_def = ModFile::fromFileName(file_name);
-        if (file_def.type != ModFileType::ESP) {
+        if (file_def.type != ModFileType::ESP && file_def.type != ModFileType::ESM) {
             continue;
         }
 
@@ -195,7 +198,11 @@ int writePluginsFile(void) {
             if (mod->esp_enabled) {
                 plugins_stream << '*';
             }
-            plugins_stream << mod->base_name << ".esp";
+            if (mod->is_master) {
+                plugins_stream << mod->base_name << ".esm";
+            } else {
+                plugins_stream << mod->base_name << ".esp";
+            }
             plugins_stream << '\n';
         }
     }

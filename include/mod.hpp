@@ -31,6 +31,7 @@
 #include <vector>
 
 #define EXT_ESP "esp"
+#define EXT_ESM "esm"
 #define EXT_BSA "bsa"
 
 enum class ModStatus {
@@ -42,6 +43,7 @@ enum class ModStatus {
 enum class ModFileType {
     BSA,
     ESP,
+    ESM,
     UNKNOWN
 };
 
@@ -56,6 +58,7 @@ struct ModFile {
 struct SkyrimMod {
     const std::string base_name;
     bool has_esp;
+    bool is_master;
     bool esp_enabled;
     std::vector<std::string> bsa_suffixes;
     std::map<std::string, int> enabled_bsas;
@@ -63,6 +66,7 @@ struct SkyrimMod {
     SkyrimMod(std::string const &base_name):
             base_name(base_name),
             has_esp(false),
+            is_master(false),
             esp_enabled(false),
             bsa_suffixes(),
             enabled_bsas() {
