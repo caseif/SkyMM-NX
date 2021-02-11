@@ -55,13 +55,24 @@ ModFile ModFile::fromFileName(std::string const &file_name) {
             suffix = base.substr(dash_index + 3);
             base = base.substr(0, dash_index);
         }
-    } else if (ext == EXT_ESP) {
+    } else if (ext == EXT_ESP || ext == EXT_ESM) {
         suffix = "";
     } else {
         return {ModFileType::UNKNOWN};
     }
 
-    return {ext == EXT_BSA ? ModFileType::BSA : ModFileType::ESP, base, suffix};
+    ModFileType type;
+    if (ext == EXT_ESM) {
+        type = ModFileType::ESM;
+    } else if (ext == EXT_ESP) {
+        type = ModFileType::ESP;
+    } else if (ext == EXT_BSA) {
+        type = ModFileType::BSA;
+    } else {
+        type = ModFileType::UNKNOWN;
+    }
+
+    return {type, base, suffix};
 }
 
 ModStatus SkyrimMod::getStatus(void) {

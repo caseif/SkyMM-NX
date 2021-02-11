@@ -203,7 +203,7 @@ static int writeFileList(const char *path, StdIni &ini, std::string key,
         for (std::pair<std::string, int> suffix_pair : mod->enabled_bsas) {
             for (std::string expected_suffix : expected_suffixes) {
                 if (suffix_pair.first.find(expected_suffix) == 0) {
-                    file_list.insert(file_list.end(), {ModFileType::ESP, mod->base_name, suffix_pair.first});
+                    file_list.insert(file_list.end(), {mod->is_master ? ModFileType::ESM : ModFileType::ESP, mod->base_name, suffix_pair.first});
                     break;
                 }
             }
