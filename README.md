@@ -29,7 +29,7 @@ Currently, the app requires that all mods follow a standard naming scheme:
 
 ### Docker
 
-SkyMM-NX-SMM has a vscode devcontainer setup so you just need the vscode plugin [ms-vscode-remote.remote-containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and open the project in vscode and it will ask you to open in docker container
+SkyMM-NX has a vscode devcontainer setup so you just need the vscode plugin [ms-vscode-remote.remote-containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and open the project in vscode and it will ask you to open in docker container
 
 ### Building
 
@@ -38,5 +38,5 @@ Once the docker environment has been set up, simply run `make` in the project di
 ### License
 
 SkyMM-NX-SMM is made available under the
-[MIT License](https://github.com/withertech/Sky-MM-NX-SMM/blob/master/LICENSE). It may be used, modified, and
+[MIT License](https://github.com/caseif/SkyrimNXModManager/blob/master/LICENSE). It may be used, modified, and
 distributed within the bounds of this license.
