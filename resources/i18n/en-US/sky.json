@@ -1,0 +1,38 @@
+{
+    "hints": {
+        "save": "Save",
+        "edit": "Edit",
+        "disable": "Disable",
+		"enable": "Enable"
+    },
+	"dialog": {
+		"yes": "Yes",
+		"no": "No",
+		"enable1": "Do you want to enable \"",
+		"enable2": "\" ?",
+		"disable1": "Do you want to disable \"",
+		"disable2": "\" ?"
+	},
+	"status": {
+		"enabled": "Enabled",
+		"partial": "Partial",
+		"disabled": "Disabled"
+	},
+	"msg": {
+		"edit": "Editing load order",
+		"save": "Wrote changes to SDMC!",
+		"missing1": "No mods have been found in ",
+		"missing2": "There you need to put your mods"
+	},
+	"fatal": {
+		"brls_init": "Unable to init Borealis application",
+		"no_data": "No Skyrim data folder found!\nSearched in %s",
+		"plugin": "Failed to read Plugins file",
+		"plugin_atm": "Failed to open ATM Plugins file",
+		"plugin_smm": "Failed to open SMM Plugins file",
+		"ini": "Failed to read file at %s",
+		"ini_atm": "Failed to open %s",
+		"ini_smm": "Failed to open %s",
+		"panic": "Panic @ %s:%d\n\nPlease contact the developer"
+	}
+}

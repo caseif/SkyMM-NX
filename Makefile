@@ -8,11 +8,11 @@ TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/libnx/switch_rules
 
 VERSION_MAJOR := 1
-VERSION_MINOR := 1
+VERSION_MINOR := 0
 VERSION_MICRO := 2
 
 APP_TITLE	:=	SkyMM-NX
-APP_AUTHOR	:=	caseif
+APP_AUTHOR	:=	caseif+witherking25
 APP_VERSION	:=	${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_MICRO}
 
 TARGET		:=	$(subst $e ,_,$(notdir $(APP_TITLE)))
@@ -25,6 +25,10 @@ EXEFS_SRC	:=	exefs_src
 #ROMFS		:=	romfs
 ICON		:=  res/icon.jpg
 
+ROMFS				:=	resources
+BOREALIS_PATH		:=	borealis
+BOREALIS_RESOURCES	:=	romfs:/
+
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 
 CFLAGS	:=	-Wall -O3 -ffunction-sections \
@@ -34,16 +38,18 @@ CFLAGS	:=	-Wall -O3 -ffunction-sections \
 			-D__VERSION_MICRO=${VERSION_MICRO} \
 			-D__VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_MICRO}"
 
-CFLAGS	+=	$(INCLUDE) -D__SWITCH__
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DBOREALIS_RESOURCES="\"$(BOREALIS_RESOURCES)\""
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=c++17
-
+CXXFLAGS	:= $(CFLAGS)  -std=c++17
+#-fno-rtti -fno-exceptions
 ASFLAGS	:=	$(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,-no-as-needed,-Map,$(notdir $*.map)
 
-LIBS	:= -lnx
+LIBS	:= -lsmm -lnx
 
 LIBDIRS	:= $(PORTLIBS) $(LIBNX)
+
+include $(TOPDIR)/borealis/library/borealis.mk
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 
@@ -128,7 +134,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all	:	$(OUTPUT).nro
+all	:	$(OUTPUT).smm
 
 ifeq ($(strip $(NO_NACP)),)
 $(OUTPUT).nro	:	$(OUTPUT).elf $(OUTPUT).nacp
@@ -136,9 +142,17 @@ else
 $(OUTPUT).nro	:	$(OUTPUT).elf
 endif
 
+$(OUTPUT).smm	:	$(OUTPUT).nro
+
 $(OUTPUT).elf	:	$(OFILES)
 
 $(OFILES_SRC)	: $(HFILES_BIN)
+
+
+%.smm :		%.nro
+	@cp $(basename $@).nro $@
+	@echo built ... $(notdir $@)
+
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
