@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "DKP aarch64",
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/inipp/",
@@ -10,11 +10,15 @@
                 "/opt/devkitpro/libnx/include/",
                 "/opt/devkitpro/portlibs/switch/include/"
             ],
-            "defines": [],
-            "compilerPath": "/usr/bin/gcc",
+			"defines": [
+				"SWITCH",
+				"__SWITCH__",
+				"DEBUG"
+			],
+            "compilerPath": "/opt/devkitpro/devkitA64/bin/aarch64-none-elf-gcc",
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "gcc-x64"
+            "intelliSenseMode": "gcc-arm64"
         }
     ],
     "version": 4
