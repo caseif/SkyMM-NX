@@ -1,6 +1,6 @@
-# SkyMM-NX-SMM
+# SkyMM-NX
 
-SkyMM-NX-SMM is a homebrew app (or plugin for SimpleModManager if you change the file extension to .smm) that runs on your Switch and provides an easy way to toggle skyrim mods on
+SkyMM-NX is a homebrew app (or plugin for SimpleModManager if you change the file extension to .smm) that runs on your Switch and provides an easy way to toggle skyrim mods on
 and off.
 
 SkyMM will attempt to discover all mods present in Skyrim's ROMFS on the SD card and present them through its interface.
@@ -29,7 +29,7 @@ Currently, the app requires that all mods follow a standard naming scheme:
 
 ### Docker
 
-SkyMM-NX-SMM has a vscode devcontainer setup so you just need the vscode plugin [ms-vscode-remote.remote-containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and open the project in vscode and it will ask you to open in docker container
+SkyMM-NX has a vscode devcontainer setup so you just need the vscode plugin [ms-vscode-remote.remote-containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and open the project in vscode and it will ask you to open in docker container
 
 ### Building
 
@@ -38,5 +38,5 @@ Once the docker environment has been set up, simply run `make` in the project di
 ### License
 
 SkyMM-NX-SMM is made available under the
-[MIT License](https://github.com/withertech/Sky-MM-NX-SMM/blob/master/LICENSE). It may be used, modified, and
+[MIT License](https://github.com/caseif/SkyrimNXModManager/blob/master/LICENSE). It may be used, modified, and
 distributed within the bounds of this license.
