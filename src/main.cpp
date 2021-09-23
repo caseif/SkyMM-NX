@@ -269,9 +269,15 @@ static void redrawHeader(void) {
     CONSOLE_CLEAR_LINE();
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
     printf("SkyMM-NX v" STRINGIZE(__VERSION) " by caseif");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_MAGENTA);
+    printf(", modified by SundayReds");
+    CONSOLE_MOVE_DOWN(1);
+    CONSOLE_MOVE_LEFT(255);
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+    printf("NOTE: Shorten suffixes eg. 'Mod - Meshes.bsa' should be 'Mod - M.bsa'.");
 
-    CONSOLE_MOVE_DOWN(2);
+
+    CONSOLE_MOVE_DOWN(1);
     CONSOLE_MOVE_LEFT(255);
     printf(HRULE);
 }
