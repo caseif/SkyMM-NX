@@ -34,6 +34,12 @@
 #define EXT_ESM "esm"
 #define EXT_BSA "bsa"
 
+#define SUFFIX_ANIMATIONS "Animations"
+#define SUFFIX_MESHES "Meshes"
+#define SUFFIX_SOUNDS "Sounds"
+#define SUFFIX_TEXTURES "Textures"
+#define SUFFIX_VOICES "Voices"
+
 enum class ModStatus {
     ENABLED,
     DISABLED,
