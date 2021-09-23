@@ -9,25 +9,37 @@ for pure replacement mods (lacking an ESP) will not be preserved when the respec
 
 When the save function is invoked, the INI and `Plugins` files will be modified accordingly and saved to the SD card.
 
+### Changes made to original work
+Change all suffix to be single letter only. For example, `EnaiRim - Textures` should now be formatted as `EnaiRim - T`.
+
+The skyrim.ini file has a line limit of 1024 characters, which can be hit very quickly if we use the lengthy original suffixes (I hit it around 16 mods, even with succinct base modnames).
+
+This change hence aims to remove all of that unnecessary character bloat from the skyrim.ini configuration file so that more mods can be loaded.
+
+### Naming Scheme (updated)
+
 Currently, the app requires that all mods follow a standard naming scheme:
 
+- All suffixes in filenames are to be truncated to one-letter only
+  - `Mod - Animations.bsa` to be renamed `Mod - A.bsa`
+  - `Mod - Meshes.bsa` to be renamed `Mod - M.bsa`
+  - `Mod - Sounds.bsa` to be renamed `Mod - S.bsa`
+  - `Mod - Textures.bsa` to be renamed `Mod - T.bsa`
+  - `Mod - Voices.bsa` to be renamed `Mod - V.bsa`
+  - Additional Tip: You can further replace the basename `Mod` with something even shorter like `M` - just use common sense and make sure it doesn't conflict with the basename of another mod.
+
 - BSA files with a suffix must use a hyphen with one space on either side between the base name and the suffix
-  - Example: `Static Mesh Improvement Mod - Textures.bsa`
+  - Example: `Static Mesh Improvement Mod - T.bsa`
   - Note that a mod may have exactly one non-suffixed BSA file
 - BSA files with an associated ESP file must match the ESP's name, not including the suffix
-  - Example: `Static Mesh Improvement Mod - Textures.bsa` matches `Static Mesh Improvement Mod.esp`
+  - Example: `Static Mesh Improvement Mod - T.bsa` matches `Static Mesh Improvement Mod.esp`
 - All BSA files for a given mod must match each other in name
-  - Example: `Static Mesh Improvement Mod - Textures.bsa` matches `Static Mesh Improvement Mod - Meshes.bsa`
+  - Example: `Static Mesh Improvement Mod - T.bsa` matches `Static Mesh Improvement Mod - M.bsa`
 
 ### To-do
 
-- Graceful error handling
-  - I've done minimal edge testing so far, so the app probably won't respond well to most less-than-ideal
-    conditions (e.g. missing or malformed files)
-- Proper graphical interface
-  - This isn't high priority since the console interface seems to work well enough for now
-- INI injection support
-  - Injecting INIs is easy; the hard part is disabling them in a sane way
+- Add ability to 'nickname' or give aliases to mods so that it's easier to identify truncated modnames.
+- Add a python or bash script to automatically to automatically detect and truncate all suffixes in a folder
 
 ### Building
 
