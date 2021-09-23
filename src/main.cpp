@@ -60,7 +60,7 @@
 #define SCROLL_INTERVAL 100000000
 #define SCROLL_INITIAL_DELAY 400000000
 
-static HidControllerKeys g_key_edit_lo = KEY_Y;
+static HidNpadButton g_key_edit_lo = HidNpadButton_Y;
 
 static bool g_dirty = false;
 static bool g_dirty_warned = false;
@@ -317,7 +317,7 @@ static void clearTempEffects(void) {
     }
 }
 
-void handleScrollHold(u64 kDown, u64 kHeld, HidControllerKeys key, ModGui &gui) {
+void handleScrollHold(u64 kDown, u64 kHeld, HidNpadButton key, ModGui &gui) {
     if (kHeld & key && !(kDown & key)) {
         u64 period = g_scroll_initial_cooldown ? SCROLL_INITIAL_DELAY : SCROLL_INTERVAL;
 
@@ -347,6 +347,10 @@ int main(int argc, char **argv) {
     consoleInit(NULL);
 
     ModGui gui = ModGui(getGlobalModList(), HEADER_HEIGHT, CONSOLE_LINES - HEADER_HEIGHT - FOOTER_HEIGHT);
+    
+    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+    PadState defaultPad;
+    padInitializeDefault(&defaultPad);
 
     int init_status = initialize();
     if (RC_SUCCESS(init_status)) {
@@ -358,13 +362,13 @@ int main(int argc, char **argv) {
     }
 
     while (appletMainLoop()) {
-        hidScanInput();
+        padUpdate(&defaultPad);
 
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-        u64 kUp = hidKeysUp(CONTROLLER_P1_AUTO);
-        u64 kHeld = hidKeysHeld(CONTROLLER_P1_AUTO);
+        u64 kDown = padGetButtonsDown(&defaultPad);
+        u64 kUp = padGetButtonsUp(&defaultPad);
+        u64 kHeld = padGetButtons(&defaultPad);
 
-        if (kDown & KEY_PLUS) {
+        if (kDown & HidNpadButton_Plus) {
             if (g_dirty && !g_dirty_warned) {
                 g_status_msg = "Press (+) to exit without saving changes";
                 g_tmp_status = true;
@@ -392,24 +396,24 @@ int main(int argc, char **argv) {
             redrawFooter();
         }
 
-        if ((kUp & KEY_DOWN) && g_scroll_dir == 1) {
+        if ((kUp & HidNpadButton_AnyDown) && g_scroll_dir == 1) {
             g_scroll_dir = 0;
-        } else if ((kUp & KEY_UP) && g_scroll_dir == -1) {
+        } else if ((kUp & HidNpadButton_AnyUp) && g_scroll_dir == -1) {
             g_scroll_dir = 0;
         }
 
         switch (g_scroll_dir) {
             case -1:
-                handleScrollHold(kDown, kHeld, KEY_UP, gui);
+                handleScrollHold(kDown, kHeld, HidNpadButton_AnyUp, gui);
                 break;
             case 1:
-                handleScrollHold(kDown, kHeld, KEY_DOWN, gui);
+                handleScrollHold(kDown, kHeld, HidNpadButton_AnyDown, gui);
                 break;
             default:
                 break;
         }
 
-        if (kDown & KEY_DOWN) {
+        if (kDown & HidNpadButton_AnyDown) {
             if (g_edit_load_order) {
                 if (gui.getSelectedIndex() < getGlobalModList().size() - 1) {
                     gui.getSelectedMod()->loadLater();
@@ -424,7 +428,7 @@ int main(int argc, char **argv) {
             gui.scrollSelection(1);
 
             clearTempEffects();
-        } else if (kDown & KEY_UP) {
+        } else if (kDown & HidNpadButton_AnyUp) {
             if (g_edit_load_order) {
                 if (gui.getSelectedIndex() > 0) {
                     gui.getSelectedMod()->loadSooner();
@@ -439,7 +443,7 @@ int main(int argc, char **argv) {
             gui.scrollSelection(-1);
 
             clearTempEffects();
-        } else if (kDown & KEY_A) {
+        } else if (kDown & HidNpadButton_A) {
             std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
             switch (mod->getStatus()) {
                 case ModStatus::ENABLED:
@@ -459,7 +463,7 @@ int main(int argc, char **argv) {
             clearTempEffects();
         }
 
-        if (kDown & KEY_MINUS) {
+        if (kDown & HidNpadButton_Minus) {
             g_status_msg = "Saving changes...";
             redrawFooter();
             consoleUpdate(NULL);
