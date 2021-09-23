@@ -9,12 +9,15 @@ for pure replacement mods (lacking an ESP) will not be preserved when the respec
 
 When the save function is invoked, the INI and `Plugins` files will be modified accordingly and saved to the SD card.
 
-### Changes made to original work
-Change all suffix to be single letter only. For example, `EnaiRim - Textures` should now be formatted as `EnaiRim - T`.
+### Changes Made To Original Work
+1. Change all suffixes to be single letter only. 
+- For example, `EnaiRim - Textures` should now be formatted as `EnaiRim - T`.
 
-The skyrim.ini file has a line limit of 1024 characters, which can be hit very quickly if we use the lengthy original suffixes (I hit it around 16 mods, even with succinct base modnames).
+- The skyrim.ini file has a line limit of 1024 characters, which can be hit very quickly if we use the lengthy original suffixes scheme on NexusMods (I hit it around 16 mods, even with succinct base modnames).
 
-This change hence aims to remove all of that unnecessary character bloat from the skyrim.ini configuration file so that more mods can be loaded.
+- This change hence aims to remove all of that unnecessary character bloat from the `skyrim.ini` configuration file so that more mods can be loaded.
+
+2. Very small under-the-hood fixes
 
 ### Naming Scheme (updated)
 
@@ -38,7 +41,7 @@ Currently, the app requires that all mods follow a standard naming scheme:
 
 ### To-do
 
-- Add ability to 'nickname' or give aliases to mods so that it's easier to identify truncated modnames.
+- Add ability to 'nickname' or give aliases to mods in-app or on PC via a `.txt` so that it's easier to identify truncated modnames (so that you don't come back to the game after 5 years and start wondering what `E.esp` does)
 - Add a python or bash script to automatically to automatically detect and truncate all suffixes in a folder
 
 ### Building
