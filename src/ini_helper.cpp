@@ -138,7 +138,7 @@ int processIniDefs(ModList &final_mod_list, ModList &temp_mod_list, StdIni &ini,
 
         bool good_suffix = false;
         for (std::string expected_suffix : expected_suffixes) {
-            if (mod_file.suffix.find_last_of(expected_suffix, expected_suffix.size())) {
+            if (mod_file.suffix == expected_suffix) {
                 good_suffix = true;
                 break;
             }
