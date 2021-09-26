@@ -185,64 +185,88 @@ int parseInis(ModList &final_mod_list, ModList &temp_mod_list) {
 }
 
 static int writeFileList(const char *path, StdIni &ini, std::string key,
-        std::vector<std::string> const &expected_suffixes) {
-    std::vector<ModFile> file_list;
+						 std::vector<std::string> const &expected_suffixes)
+{
+	std::vector<ModFile> file_list;
 
-    std::string archive_list_str = getString(ini, INI_SECTION_ARCHIVE, key);
-    std::vector<std::string> archive_list = split(archive_list_str, ",");
-    std::vector<ModFile> cur_file_list;
-    std::transform(archive_list.cbegin(), archive_list.cend(), std::back_inserter(cur_file_list), ModFile::fromFileName);
+	std::string archive_list_str = getString(ini, INI_SECTION_ARCHIVE, key);
+	std::vector<std::string> archive_list = split(archive_list_str, ",");
+	std::vector<ModFile> cur_file_list;
+	std::transform(archive_list.cbegin(), archive_list.cend(), std::back_inserter(cur_file_list), ModFile::fromFileName);
 
-    for (ModFile file : cur_file_list) {
-        if (file.base_name == "Skyrim") {
-            file_list.insert(file_list.end(), file);
-        }
-    }
+	for (ModFile file : cur_file_list)
+	{
+		if (file.base_name == "Skyrim")
+		{
+			file_list.insert(file_list.end(), file);
+		}
+	}
 
-    for (std::shared_ptr<SkyrimMod> mod : getGlobalModList()) {
-        for (std::pair<std::string, int> suffix_pair : mod->enabled_bsas) {
-            for (std::string expected_suffix : expected_suffixes) {
-                if (suffix_pair.first.find(expected_suffix) == 0) {
-                    file_list.insert(file_list.end(), {mod->is_master ? ModFileType::ESM : ModFileType::ESP, mod->base_name, suffix_pair.first});
-                    break;
-                }
-            }
-        }
-    }
+	for (std::shared_ptr<SkyrimMod> mod : getGlobalModList())
+	{
+		for (std::pair<std::string, int> suffix_pair : mod->enabled_bsas)
+		{
+			for (std::string expected_suffix : expected_suffixes)
+			{
+				if (suffix_pair.first.find(expected_suffix) == 0)
+				{
+					file_list.insert(file_list.end(), {mod->is_master ? ModFileType::ESM : ModFileType::ESP, mod->base_name, suffix_pair.first});
+					break;
+				}
+			}
+		}
+	}
 
-    std::stringstream ss;
-    for (auto mf_it = file_list.cbegin(); mf_it != file_list.cend(); mf_it++) {
-        ss << mf_it->base_name;
-        if (!mf_it->suffix.empty()) {
-            ss << " - " << mf_it->suffix;
-        }
-        ss << ".bsa";
+	std::stringstream ss;
+	for (auto mf_it = file_list.cbegin(); mf_it != file_list.cend(); mf_it++)
+	{
+		ss << mf_it->base_name;
+		if (!mf_it->suffix.empty())
+		{
+			ss << " - " << mf_it->suffix;
+		}
+		ss << ".bsa";
 
-        if (mf_it != file_list.cend() - 1) {
-            ss << ", ";
-        }
-    }
+		if (mf_it != file_list.cend() - 1)
+		{
+			ss << ", ";
+		}
+	}
 
-    std::string out_list_str = ss.str();
+	std::string out_list_str = ss.str();
 
-    auto sec_it = ini.sections.find(INI_SECTION_ARCHIVE);
-    std::map<std::string, std::string> sec_map;
-    if (sec_it != ini.sections.cend()) {
-        sec_map = sec_it->second;
-    }
+	auto sec_it = ini.sections.find(INI_SECTION_ARCHIVE);
+	std::map<std::string, std::string> sec_map;
+	if (sec_it != ini.sections.cend())
+	{
+		sec_map = sec_it->second;
+	}
 
-    sec_map.insert_or_assign(key, out_list_str);
+	sec_map.insert_or_assign(key, out_list_str);
 
-    ini.sections.insert_or_assign(INI_SECTION_ARCHIVE, sec_map);
+	ini.sections.insert_or_assign(INI_SECTION_ARCHIVE, sec_map);
 
-    std::ofstream ini_stream(path, std::ios::out | std::ios::trunc | std::ios::binary);
-    if (!ini_stream.good()) {
-        FATAL("Failed to open %s", path);
-        return -1;
-    }
+	std::ofstream ini_stream(path, std::ios::out | std::ios::trunc | std::ios::binary);
+	if (!ini_stream.good())
+	{
+		FATAL(("sky/fatal/ini_atm"_i18n).c_str(), path);
+		return -1;
+	}
+	ini.generate(ini_stream);
+	if (g_plugin)
+	{
+		std::ofstream ini_stream_smm(smmModPathForCfwPath(path), std::ios::out | std::ios::trunc | std::ios::binary);
 
-    ini.generate(ini_stream);
-    return 0;
+		if (!ini_stream_smm.good())
+		{
+			FATAL(("sky/fatal/ini_smm"_i18n).c_str(), smmModPathForCfwPath(path).c_str());
+			return -1;
+		}
+
+		ini.generate(ini_stream_smm);
+	}
+
+	return 0;
 }
 
 int writeIniChanges(void) {

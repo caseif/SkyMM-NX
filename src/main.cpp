@@ -343,139 +343,55 @@ void handleScrollHold(u64 kDown, u64 kHeld, HidControllerKeys key, ModGui &gui) 
     }
 }
 
-int main(int argc, char **argv) {
-    consoleInit(NULL);
+int main(int argc, char **argv)
+{
+	if (std::filesystem::path(argv[0]).extension() == ".smm")
+		g_plugin = true;
+	if (g_plugin)
+		smmInit();
+	Result rc;
+	rc = nsInitialize();
+	if (R_FAILED(rc))
+	{
+		brls::Logger::debug("nsInitialize Failed");
+	}
+	brls::i18n::loadTranslations();
+	brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
+	if (not brls::Application::init("SkyMM-NX"))
+	{
+		FATAL(("sky/fatal/brls_init"_i18n).c_str());
+	}
+	frame_root *gui;
 
-    ModGui gui = ModGui(getGlobalModList(), HEADER_HEIGHT, CONSOLE_LINES - HEADER_HEIGHT - FOOTER_HEIGHT);
+	int init_status = initialize();
+	if (RC_SUCCESS(init_status))
+	{
+		gui = new frame_root();
+		brls::Application::pushView(gui);
+	}
+	else
+	{
+		gui = new frame_root();
+	}
+	gui->registerAction(
+		"sky/hints/save"_i18n, brls::Key::PLUS, [gui] {
+			writePluginsFile();
+			writeIniChanges();
+			g_dirty = false;
 
-    int init_status = initialize();
-    if (RC_SUCCESS(init_status)) {
-        CONSOLE_CLEAR_SCREEN();
-
-        redrawHeader();
-        gui.redraw();
-        redrawFooter();
-    }
-
-    while (appletMainLoop()) {
-        hidScanInput();
-
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-        u64 kUp = hidKeysUp(CONTROLLER_P1_AUTO);
-        u64 kHeld = hidKeysHeld(CONTROLLER_P1_AUTO);
-
-        if (kDown & KEY_PLUS) {
-            if (g_dirty && !g_dirty_warned) {
-                g_status_msg = "Press (+) to exit without saving changes";
-                g_tmp_status = true;
-                g_dirty_warned = true;
-                redrawFooter();
-            } else {
-                break;
-            }
-        }
-
-        if (RC_FAILURE(init_status) || fatal_occurred()) {
-            consoleUpdate(NULL);
-            continue;
-        }
-
-        if (kDown & g_key_edit_lo) {
-            g_edit_load_order = true;
-            g_status_msg = "Editing load order";
-            redrawFooter();
-        }
-        
-        if (kUp & g_key_edit_lo) {
-            g_edit_load_order = false;
-            g_status_msg = "";
-            redrawFooter();
-        }
-
-        if ((kUp & KEY_DOWN) && g_scroll_dir == 1) {
-            g_scroll_dir = 0;
-        } else if ((kUp & KEY_UP) && g_scroll_dir == -1) {
-            g_scroll_dir = 0;
-        }
-
-        switch (g_scroll_dir) {
-            case -1:
-                handleScrollHold(kDown, kHeld, KEY_UP, gui);
-                break;
-            case 1:
-                handleScrollHold(kDown, kHeld, KEY_DOWN, gui);
-                break;
-            default:
-                break;
-        }
-
-        if (kDown & KEY_DOWN) {
-            if (g_edit_load_order) {
-                if (gui.getSelectedIndex() < getGlobalModList().size() - 1) {
-                    gui.getSelectedMod()->loadLater();
-                    g_dirty = true;
-                }
-            }
-
-            g_last_scroll_time = _nanotime();
-            g_scroll_initial_cooldown = true;
-            g_scroll_dir = 1;
-
-            gui.scrollSelection(1);
-
-            clearTempEffects();
-        } else if (kDown & KEY_UP) {
-            if (g_edit_load_order) {
-                if (gui.getSelectedIndex() > 0) {
-                    gui.getSelectedMod()->loadSooner();
-                    g_dirty = true;
-                }
-            }
-
-            g_last_scroll_time = _nanotime();
-            g_scroll_initial_cooldown = true;
-            g_scroll_dir = -1;
-
-            gui.scrollSelection(-1);
-
-            clearTempEffects();
-        } else if (kDown & KEY_A) {
-            std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
-            switch (mod->getStatus()) {
-                case ModStatus::ENABLED:
-                    mod->disable();
-                    break;
-                case ModStatus::PARTIAL:
-                case ModStatus::DISABLED:
-                    mod->enable();
-                    break;
-                default:
-                    PANIC();
-            }
-            g_dirty = true;
-
-            gui.redrawCurrentRow();
-
-            clearTempEffects();
-        }
-
-        if (kDown & KEY_MINUS) {
-            g_status_msg = "Saving changes...";
-            redrawFooter();
-            consoleUpdate(NULL);
-
-            writePluginsFile();
-            writeIniChanges();
-            g_dirty = false;
-
-            g_status_msg = "Wrote changes to SDMC!";
-            g_tmp_status = true;
-            redrawFooter();
-        }
-
-        consoleUpdate(NULL);
-    }
-
-    consoleExit(NULL);
-    return 0;
+			g_status_msg = "sky/msg/save"_i18n;
+			g_tmp_status = true;
+			return true;
+		});
+	while (brls::Application::mainLoop())
+	{
+		if (g_status_msg_old != g_status_msg)
+		{
+			g_status_msg_old = g_status_msg;
+			gui->setFooterText(g_status_msg);
+		}
+	}
+	if (g_plugin)
+		smmExit();
+	return 0;
 }
