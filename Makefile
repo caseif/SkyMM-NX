@@ -25,6 +25,10 @@ EXEFS_SRC	:=	exefs_src
 #ROMFS		:=	romfs
 ICON		:=  res/icon.jpg
 
+ROMFS				:=	resources
+BOREALIS_PATH		:=	borealis
+BOREALIS_RESOURCES	:=	romfs:/
+
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 
 CFLAGS	:=	-Wall -O3 -ffunction-sections \
@@ -34,16 +38,18 @@ CFLAGS	:=	-Wall -O3 -ffunction-sections \
 			-D__VERSION_MICRO=${VERSION_MICRO} \
 			-D__VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_MICRO}"
 
-CFLAGS	+=	$(INCLUDE) -D__SWITCH__
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DBOREALIS_RESOURCES="\"$(BOREALIS_RESOURCES)\""
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=c++17
-
+CXXFLAGS	:= $(CFLAGS)  -std=c++17
+#-fno-rtti -fno-exceptions
 ASFLAGS	:=	$(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,-no-as-needed,-Map,$(notdir $*.map)
 
-LIBS	:= -lnx
+LIBS	:= -lsmm -lnx
 
 LIBDIRS	:= $(PORTLIBS) $(LIBNX)
+
+include $(TOPDIR)/borealis/library/borealis.mk
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 
