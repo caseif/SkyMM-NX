@@ -315,6 +315,10 @@ void clearTempEffects(void)
 
 int main(int argc, char **argv)
 {
+	if (std::filesystem::path(argv[0]).extension() == ".smm")
+		g_plugin = true;
+	if (g_plugin)
+		smmInit();
 	Result rc;
 	rc = nsInitialize();
 	if (R_FAILED(rc))
@@ -357,5 +361,7 @@ int main(int argc, char **argv)
 			gui->setFooterText(g_status_msg);
 		}
 	}
+	if (g_plugin)
+		smmExit();
 	return 0;
 }

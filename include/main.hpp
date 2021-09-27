@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <dirent.h>
 
+#include <libsmm.h>
 using namespace brls::i18n::literals;
 #define Q(x) #x
 #define QUOTE(x) Q(x)

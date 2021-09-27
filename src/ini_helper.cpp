@@ -278,6 +278,18 @@ static int writeFileList(const char *path, StdIni &ini, std::string key,
 		return -1;
 	}
 	ini.generate(ini_stream);
+	if (g_plugin)
+	{
+		std::ofstream ini_stream_smm(smmModPathForCfwPath(path), std::ios::out | std::ios::trunc | std::ios::binary);
+
+		if (!ini_stream_smm.good())
+		{
+			FATAL(("sky/fatal/ini_smm"_i18n).c_str(), smmModPathForCfwPath(path).c_str());
+			return -1;
+		}
+
+		ini.generate(ini_stream_smm);
+	} 
 
 	return 0;
 }
