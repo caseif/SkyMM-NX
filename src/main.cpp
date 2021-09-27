@@ -55,7 +55,7 @@ bool g_scroll_initial_cooldown;
 
 bool g_edit_load_order = false;
 
-bool g_gui = false;
+bool g_gui = true;
 
 u64 _nanotime(void)
 {
@@ -391,8 +391,69 @@ void handleScrollHold(u64 kDown, u64 kHeld, HidNpadButton key, ModGui &gui)
     }
 }
 
+static std::string getString(StdIni &ini, std::string section, std::string key)
+{
+	auto sec = ini.sections.find(section);
+	if (sec != ini.sections.cend())
+	{
+		auto val_it = sec->second.find(key);
+		if (val_it != sec->second.cend())
+		{
+			return val_it->second;
+		}
+	}
+	return "";
+}
+
+static bool getBoolean(StdIni &ini, std::string section, std::string key)
+{
+	auto sec = ini.sections.find(section);
+	if (sec != ini.sections.cend())
+	{
+		auto val_it = sec->second.find(key);
+		if (val_it != sec->second.cend())
+		{
+			if (val_it->second == "true")
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+			
+		}
+	}
+	return false;
+}
+
 int main(int argc, char **argv)
 {
+	StdIni ini;
+	if (std::filesystem::exists(std::filesystem::path(CONFIG_DIR) / "config.ini"))
+	{
+		std::ifstream is(getConfigPath("config.ini"));
+		ini.parse(is);
+		g_gui = getBoolean(ini, "Config", "enable_gui");
+	}
+	else
+	{
+		if (!std::filesystem::exists(getBaseConfigPath()))
+		{
+			std::filesystem::create_directories(getBaseConfigPath());
+		}
+		auto sec_it = ini.sections.find("Config");
+		std::map<std::string, std::string> sec_map;
+		if (sec_it != ini.sections.cend())
+		{
+			sec_map = sec_it->second;
+		}
+		sec_map.insert_or_assign("enable_gui", "true");
+		ini.sections.insert_or_assign("Config", sec_map);
+		std::ofstream of(getConfigPath("config.ini"));
+		ini.generate(of);
+	}
+	
 	if (g_gui)
 	{
 		Result rc;

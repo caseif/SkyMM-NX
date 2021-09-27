@@ -32,6 +32,32 @@ static void _init(void)
 	}
 }
 
+const char *getBaseConfigPath(void)
+{
+	if (!initted)
+	{
+		_init();
+	}
+
+	return CONFIG_DIR;
+	
+}
+
+std::string getConfigPath(std::string &partial)
+{
+	return getConfigPath(partial.c_str());
+}
+
+std::string getConfigPath(const char *partial)
+{
+	if (!initted)
+	{
+		_init();
+	}
+
+	return std::string(CONFIG_DIR) + "/" + partial;
+}
+
 const char *getBaseRomfsPath(void)
 {
 	if (!initted)
