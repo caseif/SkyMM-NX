@@ -25,6 +25,19 @@
 
 #include "main.hpp"
 
+#define STRINGIZE0(x) #x
+#define STRINGIZE(x) STRINGIZE0(x)
+
+#define HEADER_HEIGHT 3
+#define FOOTER_HEIGHT 5
+
+#define HRULE "--------------------------------"
+
+#define SCROLL_INTERVAL 100000000
+#define SCROLL_INITIAL_DELAY 400000000
+
+static HidNpadButton g_key_edit_lo = HidNpadButton_Y;
+
 bool g_dirty = false;
 bool g_dirty_warned = false;
 
@@ -42,7 +55,7 @@ bool g_scroll_initial_cooldown;
 
 bool g_edit_load_order = false;
 
-bool g_plugin = false;
+bool g_gui = false;
 
 u64 _nanotime(void)
 {
@@ -206,40 +219,6 @@ int writePluginsFile(void)
 			plugins_stream << '\n';
 		}
 	}
-	if (g_plugin)
-	{
-		std::ofstream plugins_stream_smm = std::ofstream(smmModPathForCfwPath(getRomfsPath(SKYRIM_PLUGINS_FILE)),
-														 std::ios::out | std::ios::trunc | std::ios::binary);
-
-		if (!plugins_stream_smm.good())
-		{
-			FATAL(("sky/fatal/plugin_smm"_i18n).c_str());
-			return -1;
-		}
-
-		// write header that we loaded earlier
-		plugins_stream_smm << g_plugins_header;
-
-		for (std::shared_ptr<SkyrimMod> mod : getGlobalModList())
-		{
-			if (mod->has_esp)
-			{
-				if (mod->esp_enabled)
-				{
-					plugins_stream_smm << '*';
-				}
-				if (mod->is_master)
-				{
-					plugins_stream_smm << mod->base_name << ".esm";
-				}
-				else
-				{
-					plugins_stream_smm << mod->base_name << ".esp";
-				}
-				plugins_stream_smm << '\n';
-			}
-		}
-	}
 
 	return 0;
 }
@@ -247,9 +226,18 @@ int writePluginsFile(void)
 int initialize(void)
 {
 	int rc;
-
-	brls::Logger::debug("Discovering available mods...\n");
-
+	if (g_gui)
+	{
+		brls::Logger::debug("Discovering available mods...\n");
+	}
+	else
+	{
+		CONSOLE_SET_POS(0, 0);
+		CONSOLE_CLEAR_SCREEN();
+		CONSOLE_SET_ATTRS(CONSOLE_ATTR_BOLD);
+		printf("Discovering available mods...\n");
+	}
+	
 	if (RC_FAILURE(rc = discoverMods()))
 	{
 		return rc;
@@ -273,10 +261,16 @@ int initialize(void)
 			getGlobalModList().insert(getGlobalModList().end(), mod);
 		}
 	}
-
-	brls::Logger::debug("Identified {} mods\n", getGlobalModList().size());
-
-	brls::Logger::debug("Mod listing:\n\n");
+	if (g_gui)
+	{
+		brls::Logger::debug("Identified {} mods\n", getGlobalModList().size());
+		brls::Logger::debug("Mod listing:\n\n");	}
+	else
+	{
+		printf("Identified %lu mods\n", getGlobalModList().size());
+		CONSOLE_MOVE_DOWN(3);
+		printf("Mod listing:\n\n");
+	}
 	for (auto it = getGlobalModList().cbegin(); it != getGlobalModList().cend(); it++)
 	{
 		ModStatus status = (*it)->getStatus();
@@ -296,10 +290,63 @@ int initialize(void)
 			PANIC();
 			return -1;
 		}
-		brls::Logger::debug("  - {} ({})\n", (*it)->base_name.c_str(), status_str);
+		if (g_gui)
+		{
+			brls::Logger::debug("  - {} ({})\n", (*it)->base_name.c_str(), status_str);
+		}
+		else
+		{
+			printf("  - %s (%s)\n", (*it)->base_name.c_str(), status_str);
+		}
 	}
 
 	return 0;
+}
+
+static void redrawHeader(void) 
+{
+    CONSOLE_SET_POS(0, 0);
+    CONSOLE_CLEAR_LINE();
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
+    printf("SkyMM-NX v" STRINGIZE(__VERSION) " by caseif");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+
+    CONSOLE_MOVE_DOWN(2);
+    CONSOLE_MOVE_LEFT(255);
+    printf(HRULE);
+}
+
+static void redrawFooter() 
+{
+    CONSOLE_SET_POS(39, 0);
+    CONSOLE_CLEAR_LINE();
+    printf(HRULE);
+    CONSOLE_MOVE_LEFT(255);
+    CONSOLE_MOVE_DOWN(1);
+
+    CONSOLE_MOVE_DOWN(1);
+    CONSOLE_CLEAR_LINE();
+    if (!g_status_msg.empty()) 
+	{
+        CONSOLE_SET_ATTRS(CONSOLE_ATTR_NONE);
+        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_YELLOW);
+        printf(g_status_msg.c_str());
+        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+        CONSOLE_SET_ATTRS(CONSOLE_ATTR_BOLD);
+    }
+    CONSOLE_MOVE_LEFT(255);
+
+    CONSOLE_MOVE_DOWN(1);
+    CONSOLE_CLEAR_LINE();
+
+    CONSOLE_MOVE_DOWN(1);
+    CONSOLE_CLEAR_LINE();
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_GREEN);
+    printf("(Up/Down) Navigate  |  (A) Toggle Mod  |  (Y) (hold) Change Load Order");
+    CONSOLE_MOVE_LEFT(255);
+    CONSOLE_MOVE_DOWN(1);
+    printf("(-) Save Changes    |  (+) Exit");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
 }
 
 void clearTempEffects(void)
@@ -313,49 +360,223 @@ void clearTempEffects(void)
 	}
 }
 
+void handleScrollHold(u64 kDown, u64 kHeld, HidNpadButton key, ModGui &gui) 
+{
+    if (kHeld & key && !(kDown & key)) 
+	{
+        u64 period = g_scroll_initial_cooldown ? SCROLL_INITIAL_DELAY : SCROLL_INTERVAL;
+
+        if (_nanotime() - g_last_scroll_time >= period) 
+		{
+            g_last_scroll_time = _nanotime();
+            g_scroll_initial_cooldown = false;
+
+            if (g_edit_load_order) 
+			{
+                if (gui.getSelectedIndex() < getGlobalModList().size() - 1) 
+				{
+                    if (g_scroll_dir == 1) {
+                        gui.getSelectedMod()->loadLater();
+                    } else {
+                        gui.getSelectedMod()->loadSooner();
+                    }
+                    g_dirty = true;
+                }
+            }
+
+            gui.scrollSelection(g_scroll_dir);
+
+            clearTempEffects();
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
-	Result rc;
-	rc = nsInitialize();
-	if (R_FAILED(rc))
+	if (g_gui)
 	{
-		brls::Logger::debug("nsInitialize Failed");
-	}
-	brls::i18n::loadTranslations();
-	brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
-	if (not brls::Application::init("SkyMM-NX"))
-	{
-		FATAL(("sky/fatal/brls_init"_i18n).c_str());
-	}
-	frame_root *gui;
+		Result rc;
+		rc = nsInitialize();
+		if (R_FAILED(rc))
+		{
+			brls::Logger::debug("nsInitialize Failed");
+		}
+		brls::i18n::loadTranslations();
+		brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
+		if (not brls::Application::init("SkyMM-NX"))
+		{
+			FATAL(("sky/fatal/brls_init"_i18n).c_str());
+		}
+		frame_root *gui;
 
-	int init_status = initialize();
-	if (RC_SUCCESS(init_status))
-	{
-		gui = new frame_root();
-		brls::Application::pushView(gui);
+		int init_status = initialize();
+		if (RC_SUCCESS(init_status))
+		{
+			gui = new frame_root();
+			brls::Application::pushView(gui);
+		}
+		else
+		{
+			gui = new frame_root();
+		}
+		gui->registerAction(
+			"sky/hints/save"_i18n, brls::Key::PLUS, [gui] {
+				writePluginsFile();
+				writeIniChanges();
+				g_dirty = false;
+
+				g_status_msg = "sky/msg/save"_i18n;
+				g_tmp_status = true;
+				return true;
+			});
+		while (brls::Application::mainLoop())
+		{
+			if (g_status_msg_old != g_status_msg)
+			{
+				g_status_msg_old = g_status_msg;
+				gui->setFooterText(g_status_msg);
+			}
+		}
 	}
 	else
 	{
-		gui = new frame_root();
-	}
-	gui->registerAction(
-		"sky/hints/save"_i18n, brls::Key::PLUS, [gui] {
-			writePluginsFile();
-			writeIniChanges();
-			g_dirty = false;
+		consoleInit(NULL);
 
-			g_status_msg = "sky/msg/save"_i18n;
-			g_tmp_status = true;
-			return true;
-		});
-	while (brls::Application::mainLoop())
-	{
-		if (g_status_msg_old != g_status_msg)
-		{
-			g_status_msg_old = g_status_msg;
-			gui->setFooterText(g_status_msg);
+		ModGui gui = ModGui(getGlobalModList(), HEADER_HEIGHT, CONSOLE_LINES - HEADER_HEIGHT - FOOTER_HEIGHT);
+
+		padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+		PadState defaultPad;
+		padInitializeDefault(&defaultPad);
+
+		int init_status = initialize();
+		if (RC_SUCCESS(init_status)) {
+			CONSOLE_CLEAR_SCREEN();
+
+			redrawHeader();
+			gui.redraw();
+			redrawFooter();
 		}
+
+		while (appletMainLoop()) {
+         	padUpdate(&defaultPad);
+			
+			u64 kDown = padGetButtonsDown(&defaultPad);
+			u64 kUp = padGetButtonsUp(&defaultPad);
+			u64 kHeld = padGetButtons(&defaultPad);
+
+			if (kDown & HidNpadButton_Plus) {
+				if (g_dirty && !g_dirty_warned) {
+					g_status_msg = "Press (+) to exit without saving changes";
+					g_tmp_status = true;
+					g_dirty_warned = true;
+					redrawFooter();
+				} else {
+					break;
+				}
+			}
+
+			if (RC_FAILURE(init_status) || fatal_occurred()) {
+				consoleUpdate(NULL);
+				continue;
+			}
+
+			if (kDown & g_key_edit_lo) {
+				g_edit_load_order = true;
+				g_status_msg = "Editing load order";
+				redrawFooter();
+			}
+			
+			if (kUp & g_key_edit_lo) {
+				g_edit_load_order = false;
+				g_status_msg = "";
+				redrawFooter();
+			}
+
+			if ((kUp & HidNpadButton_AnyDown) && g_scroll_dir == 1) {
+				g_scroll_dir = 0;
+			} else if ((kUp & HidNpadButton_AnyUp) && g_scroll_dir == -1) {
+				g_scroll_dir = 0;
+			}
+
+			switch (g_scroll_dir) {
+				case -1:
+					handleScrollHold(kDown, kHeld, HidNpadButton_AnyUp, gui);
+					break;
+				case 1:
+					handleScrollHold(kDown, kHeld, HidNpadButton_AnyDown, gui);
+					break;
+				default:
+					break;
+			}
+
+			if (kDown & HidNpadButton_AnyDown) {
+				if (g_edit_load_order) {
+					if (gui.getSelectedIndex() < getGlobalModList().size() - 1) {
+						gui.getSelectedMod()->loadLater();
+						g_dirty = true;
+					}
+				}
+
+				g_last_scroll_time = _nanotime();
+				g_scroll_initial_cooldown = true;
+				g_scroll_dir = 1;
+
+				gui.scrollSelection(1);
+
+				clearTempEffects();
+			} else if (kDown & HidNpadButton_AnyUp) {
+				if (g_edit_load_order) {
+					if (gui.getSelectedIndex() > 0) {
+						gui.getSelectedMod()->loadSooner();
+						g_dirty = true;
+					}
+				}
+
+				g_last_scroll_time = _nanotime();
+				g_scroll_initial_cooldown = true;
+				g_scroll_dir = -1;
+
+				gui.scrollSelection(-1);
+
+				clearTempEffects();
+			} else if (kDown & HidNpadButton_A) {
+				std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
+				switch (mod->getStatus()) {
+					case ModStatus::ENABLED:
+						mod->disable();
+						break;
+					case ModStatus::PARTIAL:
+					case ModStatus::DISABLED:
+						mod->enable();
+						break;
+					default:
+						PANIC();
+				}
+				g_dirty = true;
+
+				gui.redrawCurrentRow();
+
+				clearTempEffects();
+			}
+
+			if (kDown & HidNpadButton_Minus) {
+				g_status_msg = "Saving changes...";
+				redrawFooter();
+				consoleUpdate(NULL);
+
+				writePluginsFile();
+				writeIniChanges();
+				g_dirty = false;
+
+				g_status_msg = "Wrote changes to SDMC!";
+				g_tmp_status = true;
+				redrawFooter();
+			}
+
+			consoleUpdate(NULL);
+		}
+
+		consoleExit(NULL);
 	}
 	return 0;
 }

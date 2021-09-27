@@ -3,6 +3,7 @@
 #include <borealis.hpp>
 #include "console_helper.hpp"
 #include "error_defs.hpp"
+#include "gui.hpp"
 #include "frame_root.hpp"
 #include "ini_helper.hpp"
 #include "mod.hpp"
@@ -44,7 +45,7 @@ extern u64 g_last_scroll_time;
 extern bool g_scroll_initial_cooldown;
 
 extern bool g_edit_load_order;
-extern bool g_plugin;
+extern bool g_gui;
 
 extern std::string g_sel_mod;
 extern std::string g_prev_mod;

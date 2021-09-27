@@ -29,13 +29,30 @@
 #include "main.hpp"
 #include <borealis.hpp>
 
-#define FATAL(fmt, ...)               \
-	char msg[100] = "Fatal Error: ";  \
-	char err[100];                    \
-	sprintf(err, fmt, ##__VA_ARGS__); \
-	strcat(msg, err);                 \
-	brls::Application::crash(msg);    \
-	g_fatal_occurred = true;
+#define FATAL(fmt, ...) \
+	if (g_gui) \
+	{ \
+		char msg[100] = "Fatal Error: "; \
+		char err[100]; \
+		sprintf(err, fmt, ##__VA_ARGS__); \
+		strcat(msg, err); \
+		brls::Application::crash(msg); \
+		g_fatal_occurred = true; \
+	} \
+	else \
+	{ \
+		CONSOLE_CLEAR_SCREEN(); \
+		CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_RED); \
+		printf("Fatal error: " ); \
+		CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_YELLOW); \
+		printf(fmt, ##__VA_ARGS__); \
+		CONSOLE_MOVE_DOWN(3); \
+		CONSOLE_MOVE_LEFT(99); \
+		CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_GREEN); \
+		printf("Press (+) to exit.\n"); \
+		g_fatal_occurred = true; \
+	}
+	
 
 #define FATAL_CODE(code, fmt, ...) FATAL(fmt " (code %d)", ##__VA_ARGS__, code)
 
