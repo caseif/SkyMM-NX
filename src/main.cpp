@@ -502,6 +502,7 @@ int main(int argc, char **argv)
 	else
 	{
 		consoleInit(NULL);
+		brls::i18n::loadTranslations();
 
 		ModGui gui = ModGui(getGlobalModList(), HEADER_HEIGHT, CONSOLE_LINES - HEADER_HEIGHT - FOOTER_HEIGHT);
 
