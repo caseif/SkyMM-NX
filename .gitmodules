@@ -1,3 +1,6 @@
 [submodule "inipp"]
 	path = inipp
 	url = https://github.com/mcmtroffaes/inipp
+[submodule "borealis"]
+	path = borealis
+	url = https://github.com/withertech/borealis

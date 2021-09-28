@@ -1,0 +1,44 @@
+{
+    "hints": {
+        "save": "Save",
+        "edit": "Edit",
+        "disable": "Disable",
+		"enable": "Enable"
+    },
+	"dialog": {
+		"yes": "Yes",
+		"no": "No",
+		"enable": "Do you want to enable \"{}\" ?",
+		"disable": "Do you want to disable \"{}\" ?"
+	},
+	"status": {
+		"enabled": "Enabled",
+		"partial": "Partial",
+		"disabled": "Disabled"
+	},
+	"msg": {
+		"edit": "Editing load order",
+		"saving": "Saving changes...",
+		"save": "Wrote changes to SDMC!",
+		"warning": "Press ({}) to exit without saving changes",
+		"missing": "No mods have been found in {} There you need to put your mods"
+	},
+	"tab": {
+		"mods": "Mods"
+	},
+	"console": {
+		"footer1": "(Up/Down) Navigate  |  (A) Toggle Mod  |  (Y) (hold) Change Load Order",
+		"footer2": "(-) Save Changes    |  (+) Exit"
+	},
+	"fatal": {
+		"brls_init": "Unable to init Borealis application",
+		"no_data": "No Skyrim data folder found!\nSearched in %s",
+		"plugin": "Failed to read Plugins file",
+		"plugin_atm": "Failed to open ATM Plugins file",
+		"plugin_smm": "Failed to open SMM Plugins file",
+		"ini": "Failed to read file at %s",
+		"ini_atm": "Failed to open %s",
+		"ini_smm": "Failed to open %s",
+		"panic": "Panic @ %s:%d\n\nPlease contact the developer"
+	}
+}

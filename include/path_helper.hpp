@@ -27,6 +27,8 @@
 
 #include <string>
 
+#define CONFIG_DIR "sdmc:/config/SkyMM-NX"
+
 #define SKYRIM_ROMFS_DIR "sdmc:/atmosphere/contents/01000A10041EA000/romfs"
 #define SKYRIM_ROMFS_DIR_OLD "sdmc:/atmosphere/titles/01000A10041EA000/romfs"
 #define SKYRIM_DATA_DIR "Data"
@@ -35,6 +37,12 @@
 #define SKYRIM_PLUGINS_FILE "Plugins"
 
 #define LANG_CODE_MAX_LEN 6
+
+std::string getConfigPath(std::string &partial);
+
+std::string getConfigPath(const char *partial);
+
+const char *getBaseConfigPath(void);
 
 std::string getRomfsPath(std::string &partial);
 

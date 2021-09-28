@@ -26,32 +26,51 @@
 #pragma once
 
 #include "console_helper.hpp"
+#include "main.hpp"
+#include <borealis.hpp>
 
-#define FATAL(fmt, ...) CONSOLE_CLEAR_SCREEN(); \
-                        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_RED); \
-                        printf("Fatal error: " ); \
-                        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_YELLOW); \
-                        printf(fmt, ##__VA_ARGS__); \
-                        CONSOLE_MOVE_DOWN(3); \
-                        CONSOLE_MOVE_LEFT(99); \
-                        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_GREEN); \
-                        printf("Press (+) to exit.\n"); \
-                        g_fatal_occurred = true
+#define FATAL(fmt, ...) \
+	if (g_gui) \
+	{ \
+		char msg[100] = "Fatal Error: "; \
+		char err[100]; \
+		sprintf(err, fmt, ##__VA_ARGS__); \
+		strcat(msg, err); \
+		brls::Application::crash(msg); \
+		g_fatal_occurred = true; \
+	} \
+	else \
+	{ \
+		CONSOLE_CLEAR_SCREEN(); \
+		CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_RED); \
+		printf("Fatal error: " ); \
+		CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_YELLOW); \
+		printf(fmt, ##__VA_ARGS__); \
+		CONSOLE_MOVE_DOWN(3); \
+		CONSOLE_MOVE_LEFT(99); \
+		CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_GREEN); \
+		printf("Press (+) to exit.\n"); \
+		g_fatal_occurred = true; \
+	}
+	
 
 #define FATAL_CODE(code, fmt, ...) FATAL(fmt " (code %d)", ##__VA_ARGS__, code)
 
-#define PANIC() FATAL("Panic @ %s:%d\n\nPlease contact the developer", __FILE__, __LINE__)
+#define PANIC() FATAL(("sky/fatal/panic"_i18n).c_str(), __FILE__, __LINE__)
 
 #define RC_SUCCESS(rc) (rc == 0)
 #define RC_FAILURE(rc) (rc != 0)
 
-#define DO_OR_DIE(rc, task, fail_fmt, ...)  if ((rc = RC_FAILURE((task)))) { \
-                                                FATAL_CODE(rc, fail_fmt, ##__VA_ARGS__); \
-                                                return -1; \
-                                            }
+#define DO_OR_DIE(rc, task, fail_fmt, ...)       \
+	if ((rc = RC_FAILURE((task))))               \
+	{                                            \
+		FATAL_CODE(rc, fail_fmt, ##__VA_ARGS__); \
+		return -1;                               \
+	}
 
 static bool g_fatal_occurred = false;
 
-inline bool fatal_occurred(void) {
-    return g_fatal_occurred;
+inline bool fatal_occurred(void)
+{
+	return g_fatal_occurred;
 }
