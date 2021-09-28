@@ -14,12 +14,12 @@ tab_mods::tab_mods()
 	for (int i_mod = 0; i_mod < int(mod_items_list.size()); i_mod++)
 	{
 		std::string selected_mod = mod_items_list[i_mod].get()->base_name;
-		brls::Logger::debug("Adding mod: %s", selected_mod.c_str());
+		brls::Logger::debug("Adding mod: {}", selected_mod.c_str());
 		ModListItem *item = new ModListItem(selected_mod, "", "");
 		item->getClickEvent()->subscribe([this, item](View *view) {
 			if (!g_dialog_open)
 			{
-				auto *dialog = new brls::Dialog("sky/dialog/enable1"_i18n + item->getLabel() + "sky/dialog/enable2"_i18n);
+				auto *dialog = new brls::Dialog(fmt::format("sky/dialog/enable"_i18n, item->getLabel()));
 
 				dialog->addButton("sky/dialog/yes"_i18n, [item, dialog, this](brls::View *view) {
 					std::shared_ptr<SkyrimMod> mod = find_mod(getGlobalModList(), item->getLabel());
@@ -124,9 +124,7 @@ tab_mods::tab_mods()
 	if (mod_items_list.empty())
 	{
 
-		auto *emptyListLabel = new brls::ListItem(
-			"sky/msg/missing1"_i18n + getRomfsPath("Data"),
-			"sky/msg/missing2"_i18n);
+		auto *emptyListLabel = new brls::ListItem(fmt::format("sky/msg/missing"_i18n, getRomfsPath("Data")));
 		emptyListLabel->show([]() {}, false);
 		this->addView(emptyListLabel);
 	}

@@ -482,6 +482,12 @@ int main(int argc, char **argv)
 		}
 		gui->registerAction(
 			"sky/hints/save"_i18n, brls::Key::PLUS, [gui] {
+				g_status_msg = "sky/msg/saving"_i18n;
+				if (g_status_msg_old != g_status_msg)
+				{
+					g_status_msg_old = g_status_msg;
+					gui->setFooterText(g_status_msg);
+				}
 				writePluginsFile();
 				writeIniChanges();
 				g_dirty = false;
@@ -528,7 +534,7 @@ int main(int argc, char **argv)
 
 			if (kDown & HidNpadButton_Plus) {
 				if (g_dirty && !g_dirty_warned) {
-					g_status_msg = "Press (+) to exit without saving changes";
+					g_status_msg = fmt::format("sky/msg/warning"_i18n, "+");
 					g_tmp_status = true;
 					g_dirty_warned = true;
 					redrawFooter();
@@ -544,7 +550,7 @@ int main(int argc, char **argv)
 
 			if (kDown & g_key_edit_lo) {
 				g_edit_load_order = true;
-				g_status_msg = "Editing load order";
+				g_status_msg = "sky/msg/edit"_i18n;
 				redrawFooter();
 			}
 			
@@ -622,7 +628,7 @@ int main(int argc, char **argv)
 			}
 
 			if (kDown & HidNpadButton_Minus) {
-				g_status_msg = "Saving changes...";
+				g_status_msg = "sky/msg/saving"_i18n;
 				redrawFooter();
 				consoleUpdate(NULL);
 
@@ -630,7 +636,7 @@ int main(int argc, char **argv)
 				writeIniChanges();
 				g_dirty = false;
 
-				g_status_msg = "Wrote changes to SDMC!";
+				g_status_msg = "sky/msg/save"_i18n;
 				g_tmp_status = true;
 				redrawFooter();
 			}
