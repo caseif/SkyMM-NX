@@ -155,7 +155,7 @@ int processIniDefs(ModList &final_mod_list, ModList &temp_mod_list, StdIni &ini,
 		bool good_suffix = false;
 		for (std::string expected_suffix : expected_suffixes)
 		{
-			if (mod_file.suffix.find_last_of(expected_suffix, expected_suffix.size()))
+			if (mod_file.suffix == expected_suffix)
 			{
 				good_suffix = true;
 				break;
@@ -233,7 +233,7 @@ static int writeFileList(const char *path, StdIni &ini, std::string key,
 		{
 			for (std::string expected_suffix : expected_suffixes)
 			{
-				if (suffix_pair.first.find(expected_suffix) == 0)
+				if (suffix_pair.first == expected_suffix)
 				{
 					file_list.insert(file_list.end(), {mod->is_master ? ModFileType::ESM : ModFileType::ESP, mod->base_name, suffix_pair.first});
 					break;
