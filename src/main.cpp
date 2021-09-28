@@ -342,10 +342,10 @@ static void redrawFooter()
     CONSOLE_MOVE_DOWN(1);
     CONSOLE_CLEAR_LINE();
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_GREEN);
-    printf("(Up/Down) Navigate  |  (A) Toggle Mod  |  (Y) (hold) Change Load Order");
+    printf(("sky/console/footer1"_i18n).c_str());
     CONSOLE_MOVE_LEFT(255);
     CONSOLE_MOVE_DOWN(1);
-    printf("(-) Save Changes    |  (+) Exit");
+    printf(("sky/console/footer2"_i18n).c_str());
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
 }
 

@@ -24,6 +24,10 @@
 		"missing1": "No mods have been found in ",
 		"missing2": "There you need to put your mods"
 	},
+	"console": {
+		"footer1": "(Up/Down) Navigate  |  (A) Toggle Mod  |  (Y) (hold) Change Load Order",
+		"footer2": "(-) Save Changes    |  (+) Exit"
+	},
 	"fatal": {
 		"brls_init": "Unable to init Borealis application",
 		"no_data": "No Skyrim data folder found!\nSearched in %s",
